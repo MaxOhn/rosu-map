@@ -25,8 +25,8 @@ impl<R: Read> Reader<R> {
                 buf.truncate(idx);
             }
 
-            if let Some(line) = trim_end(buf) {
-                return Ok(Some(line));
+            if not_empty_after_trim(buf) {
+                return Ok(Some(buf.as_str()));
             }
         }
     }
@@ -42,19 +42,19 @@ impl<R: Read> Reader<R> {
                 return Ok(None);
             }
 
-            if let Some(line) = trim_end(buf) {
-                return Ok(Some(line));
+            if not_empty_after_trim(buf) {
+                return Ok(Some(buf.as_str()));
             }
         }
     }
 }
 
-fn trim_end(buf: &mut String) -> Option<&str> {
+fn not_empty_after_trim(buf: &mut String) -> bool {
     if let Some(idx) = buf.rfind(|c: char| !c.is_whitespace()) {
         buf.truncate(idx + 1);
 
-        Some(buf)
+        true
     } else {
-        None
+        false
     }
 }
