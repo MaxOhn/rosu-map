@@ -1,15 +1,13 @@
 use std::{io::Cursor, path::Path, str::FromStr};
 
-use crate::{
-    error::{ParseError, ParseResult},
-    reader::Reader,
-};
+use crate::error::{ParseError, ParseResult};
 
 #[derive(Debug, Default)]
 pub struct Beatmap {
     pub format_version: i32,
 
     // General
+    pub tmp: String,
 
     // Editor
     pub bookmarks: Vec<i32>,
@@ -27,7 +25,7 @@ pub struct Beatmap {
     pub version: String,
     pub source: String,
     pub tags: Vec<String>,
-    pub beatmap_id: u32,
+    pub beatmap_id: i32,
     pub beatmap_set_id: i32,
 
     // Difficulty
@@ -48,11 +46,11 @@ pub struct Beatmap {
 
 impl Beatmap {
     pub fn from_path(path: impl AsRef<Path>) -> ParseResult<Self> {
-        std::fs::read_to_string(path)?.parse()
+        parse::parse_input(std::fs::File::open(path)?)
     }
 
     pub fn from_bytes(bytes: &[u8]) -> ParseResult<Self> {
-        parse::parse_input(Reader::new(Cursor::new(bytes)))
+        parse::parse_input(Cursor::new(bytes))
     }
 }
 
@@ -60,7 +58,7 @@ impl FromStr for Beatmap {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse::parse_input(Reader::new(Cursor::new(s)))
+        parse::parse_input(Cursor::new(s))
     }
 }
 
@@ -76,47 +74,24 @@ mod parse {
         section::Section,
     };
 
-    pub fn parse_path(path: impl AsRef<Path>) -> ParseResult<Beatmap> {
-        todo!()
-    }
-
-    pub fn parse_input<R: Read>(mut reader: Reader<R>) -> ParseResult<Beatmap> {
-        // TODO: UTF-16
-
-        let mut buf = String::with_capacity(32);
+    pub fn parse_input<R: Read>(src: R) -> ParseResult<Beatmap> {
+        let (mut reader, format_version) = Reader::new(src)?;
 
         let mut map = Beatmap {
-            format_version: parse_version(&mut reader, &mut buf)?,
+            format_version,
             ..Default::default()
         };
 
-        parse_sections(&mut reader, &mut map, &mut buf)?;
+        parse_sections(&mut reader, &mut map)?;
 
         Ok(map)
     }
 
-    fn parse_version<R: Read>(reader: &mut Reader<R>, buf: &mut String) -> ParseResult<i32> {
-        const LATEST_VERSION: i32 = 14;
-        const VERSION_PREFIX: &str = "osu file format v";
-
-        match reader
-            .read_line(buf)?
-            .and_then(|line| line.strip_prefix(VERSION_PREFIX))
-        {
-            Some(suffix) => suffix.parse().map_err(|_| ParseError::InvalidInteger),
-            None => Ok(LATEST_VERSION),
-        }
-    }
-
     type Flow = ControlFlow<(), Section>;
 
-    fn parse_sections<R: Read>(
-        reader: &mut Reader<R>,
-        map: &mut Beatmap,
-        buf: &mut String,
-    ) -> ParseResult<()> {
+    fn parse_sections<R: Read>(reader: &mut Reader<R>, map: &mut Beatmap) -> ParseResult<()> {
         let mut section = loop {
-            match reader.read_line(buf)?.map(Section::try_from_line) {
+            match reader.read_line()?.as_deref().map(Section::try_from_line) {
                 Some(Some(section)) => break section,
                 Some(None) => {}
                 None => return Ok(()),
@@ -125,14 +100,14 @@ mod parse {
 
         loop {
             let flow = match section {
-                Section::General => parse_section(reader, map, buf, parse_general)?,
-                Section::Editor => parse_section(reader, map, buf, parse_editor)?,
-                Section::Metadata => parse_metadata(reader, map, buf)?,
-                Section::Difficulty => parse_section(reader, map, buf, parse_difficulty)?,
-                Section::Events => parse_section(reader, map, buf, parse_events)?,
-                Section::TimingPoints => parse_section(reader, map, buf, parse_timing_points)?,
-                Section::Colours => parse_section(reader, map, buf, parse_colours)?,
-                Section::HitObjects => parse_section(reader, map, buf, parse_hit_objects)?,
+                Section::General => parse_section(reader, map, parse_general)?,
+                Section::Editor => parse_section(reader, map, parse_editor)?,
+                Section::Metadata => parse_metadata(reader, map)?,
+                Section::Difficulty => parse_section(reader, map, parse_difficulty)?,
+                Section::Events => parse_section(reader, map, parse_events)?,
+                Section::TimingPoints => parse_section(reader, map, parse_timing_points)?,
+                Section::Colours => parse_section(reader, map, parse_colours)?,
+                Section::HitObjects => parse_section(reader, map, parse_hit_objects)?,
             };
 
             match flow {
@@ -144,22 +119,17 @@ mod parse {
         Ok(())
     }
 
-    fn parse_section<R, F>(
-        reader: &mut Reader<R>,
-        map: &mut Beatmap,
-        buf: &mut String,
-        f: F,
-    ) -> ParseResult<Flow>
+    fn parse_section<R, F>(reader: &mut Reader<R>, map: &mut Beatmap, f: F) -> ParseResult<Flow>
     where
         R: Read,
         F: Fn(&mut Beatmap, &str) -> ParseResult<()>,
     {
-        while let Some(line) = reader.read_line(buf)? {
-            if let Some(next) = Section::try_from_line(line) {
+        while let Some(line) = reader.read_line()? {
+            if let Some(next) = Section::try_from_line(&line) {
                 return Ok(Flow::Continue(next));
             }
 
-            f(map, line)?;
+            f(map, &line)?;
         }
 
         Ok(Flow::Break(()))
@@ -169,6 +139,7 @@ mod parse {
         let (key, value) = line.split_once(':').ok_or_else(|| todo!())?;
 
         match key.trim() {
+            "Tmp" => map.tmp = value.trim().to_owned(),
             _ => {}
         }
 
@@ -202,16 +173,12 @@ mod parse {
 
     // Distinct from the others because comments aren't stripped
     // since song metadata may contain "//" as valid data
-    fn parse_metadata<R>(
-        reader: &mut Reader<R>,
-        map: &mut Beatmap,
-        buf: &mut String,
-    ) -> ParseResult<Flow>
+    fn parse_metadata<R>(reader: &mut Reader<R>, map: &mut Beatmap) -> ParseResult<Flow>
     where
         R: Read,
     {
-        while let Some(line) = reader.read_line_with_comments(buf)? {
-            if let Some(next) = Section::try_from_line(line) {
+        while let Some(line) = reader.read_line_with_comments()? {
+            if let Some(next) = Section::try_from_line(&line) {
                 return Ok(Flow::Continue(next));
             }
 
