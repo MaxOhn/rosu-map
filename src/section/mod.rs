@@ -1,4 +1,13 @@
-#[derive(Copy, Clone, Debug)]
+pub mod colors;
+pub mod difficulty;
+pub mod editor;
+pub mod events;
+pub mod general;
+pub mod hit_objects;
+pub mod metadata;
+pub mod timing_points;
+
+#[derive(Copy, Clone)]
 pub enum Section {
     General,
     Editor,
@@ -6,7 +15,7 @@ pub enum Section {
     Difficulty,
     Events,
     TimingPoints,
-    Colours,
+    Colors,
     HitObjects,
 }
 
@@ -21,7 +30,7 @@ impl Section {
             "Difficulty" => Section::Difficulty,
             "Events" => Section::Events,
             "TimingPoints" => Section::TimingPoints,
-            "Colours" => Section::Colours,
+            "Colours" => Section::Colors,
             "HitObjects" => Section::HitObjects,
             _ => return None,
         };
