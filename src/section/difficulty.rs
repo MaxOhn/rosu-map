@@ -15,6 +15,7 @@ pub struct Difficulty {
     pub slider_tick_rate: f32,
 }
 
+/// All the ways that parsing a `.osu` file into [`Difficulty`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseDifficultyError {
     #[error("decoder error")]
@@ -25,6 +26,7 @@ pub enum ParseDifficultyError {
     Number(#[from] ParseNumberError),
 }
 
+/// The parsing state for [`Difficulty`] in [`ParseBeatmap`].
 pub struct DifficultyState {
     has_approach_rate: bool,
     difficulty: Difficulty,
@@ -49,8 +51,20 @@ impl ParseBeatmap for Difficulty {
     type ParseError = ParseDifficultyError;
     type State = DifficultyState;
 
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line);
+        let KeyValue { key, value } = KeyValue::new(line.trim_comment());
 
         match key {
             "HPDrainRate" => state.difficulty.hp_drain_rate = value.parse_num()?,
@@ -67,14 +81,30 @@ impl ParseBeatmap for Difficulty {
                 state.has_approach_rate = true;
             }
             "SliderMultiplier" => {
-                state.difficulty.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6)
+                state.difficulty.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6);
             }
             "SliderTickRate" => {
-                state.difficulty.slider_tick_rate = f32::parse(value)?.clamp(0.5, 8.0)
+                state.difficulty.slider_tick_rate = f32::parse(value)?.clamp(0.5, 8.0);
             }
             _ => {}
         }
 
+        Ok(())
+    }
+
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
         Ok(())
     }
 }

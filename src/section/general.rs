@@ -1,7 +1,10 @@
-use std::str::FromStr;
-
 use crate::{
     format_version::{FormatVersion, ParseVersionError},
+    model::{
+        countdown::{CountdownType, ParseCountdownTypeError},
+        hit_samples::{ParseSampleBankError, SampleBank},
+        mode::{GameMode, ParseGameModeError},
+    },
     parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
@@ -25,103 +28,24 @@ pub struct General {
     pub countdown_offset: i32,
 }
 
+/// All the ways that parsing a `.osu` file into [`General`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseGeneralError {
     #[error("decoder error")]
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
+    #[error("failed to parse countdown type")]
+    CountdownType(#[from] ParseCountdownTypeError),
+    #[error("failed to parse mode")]
+    Mode(#[from] ParseGameModeError),
     #[error("failed to parse number")]
     Number(#[from] ParseNumberError),
-    #[error("unknown countdown type")]
-    UnknownCountdownType,
-    #[error("unknown game mode")]
-    UnknownGameMode,
-    #[error("unknown sample bank")]
-    UnknownSampleBank,
+    #[error("failed to parse sample bank")]
+    SampleBank(#[from] ParseSampleBankError),
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum SampleBank {
-    #[default]
-    None,
-    Normal,
-    Soft,
-    Drum,
-}
-
-impl FromStr for SampleBank {
-    type Err = ParseGeneralError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "0" | "None" => Ok(Self::None),
-            "1" | "Normal" => Ok(Self::Normal),
-            "2" | "Soft" => Ok(Self::Soft),
-            "3" | "Drum" => Ok(Self::Drum),
-            _ => Err(ParseGeneralError::UnknownSampleBank),
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum GameMode {
-    #[default]
-    Osu,
-    Taiko,
-    Catch,
-    Mania,
-}
-
-impl FromStr for GameMode {
-    type Err = ParseGeneralError;
-
-    fn from_str(mode: &str) -> Result<Self, Self::Err> {
-        match mode {
-            "0" => Ok(Self::Osu),
-            "1" => Ok(Self::Taiko),
-            "2" => Ok(Self::Catch),
-            "3" => Ok(Self::Mania),
-            _ => Err(ParseGeneralError::UnknownGameMode),
-        }
-    }
-}
-
-impl From<u8> for GameMode {
-    fn from(mode: u8) -> Self {
-        match mode {
-            0 => Self::Osu,
-            1 => Self::Taiko,
-            2 => Self::Catch,
-            3 => Self::Mania,
-            _ => Self::Osu,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum CountdownType {
-    #[default]
-    None,
-    Normal,
-    HalfSpeed,
-    DoubleSpeed,
-}
-
-impl FromStr for CountdownType {
-    type Err = ParseGeneralError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "0" | "None" => Ok(Self::None),
-            "1" | "Normal" => Ok(Self::Normal),
-            "2" | "Half speed" => Ok(Self::HalfSpeed),
-            "3" | "Double speed" => Ok(Self::DoubleSpeed),
-            _ => Err(ParseGeneralError::UnknownCountdownType),
-        }
-    }
-}
-
+/// The parsing state for [`General`] in [`ParseBeatmap`].
 pub struct GeneralState {
     version: FormatVersion,
     general: General,
@@ -147,11 +71,11 @@ impl ParseBeatmap for General {
     type State = GeneralState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line);
+        let KeyValue { key, value } = KeyValue::new(line.trim_comment());
 
         match key {
             "AudioFilename" => state.general.audio_file = value.to_standardized_path(),
-            "AudioLeadIn" => state.general.audio_lead_in = i32::parse(value)? as f64,
+            "AudioLeadIn" => state.general.audio_lead_in = f64::from(i32::parse(value)?),
             "PreviewTime" => {
                 let time = i32::parse(value)?;
 
@@ -170,13 +94,41 @@ impl ParseBeatmap for General {
             "WidescreenStoryboard" => state.general.widescreen_storyboard = i32::parse(value)? == 1,
             "EpilepsyWarning" => state.general.epilepsy_warning = i32::parse(value)? == 1,
             "SamplesMatchPlaybackRate" => {
-                state.general.samples_match_playback_rate = i32::parse(value)? == 1
+                state.general.samples_match_playback_rate = i32::parse(value)? == 1;
             }
             "Countdown" => state.general.countdown = value.parse()?,
             "CountdownOffset" => state.general.countdown_offset = value.parse_num()?,
             _ => {}
         }
 
+        Ok(())
+    }
+
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
         Ok(())
     }
 }

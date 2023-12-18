@@ -1,16 +1,23 @@
 use std::{
     cmp,
-    num::{NonZeroI32, ParseIntError},
-    ops::{Add, BitAnd, BitAndAssign, Sub},
+    num::ParseIntError,
+    ops::{BitAnd, BitAndAssign},
     slice,
     str::{FromStr, Split},
 };
 
 use crate::{
     format_version::{FormatVersion, ParseVersionError},
+    model::{
+        hit_objects::{
+            slider::{HitObjectSlider, PathControlPoint, PathType, SliderPath},
+            HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSpinner,
+        },
+        hit_samples::{HitSampleInfo, SampleBank},
+    },
     parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
-    util::{ParseNumber, ParseNumberError, StrExt},
+    util::{ParseNumber, ParseNumberError, Pos, StrExt},
 };
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -18,6 +25,7 @@ pub struct HitObjects {
     pub hit_objects: Vec<HitObject>,
 }
 
+/// All the ways that parsing a `.osu` file into [`HitObjects`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseHitObjectsError {
     #[error("decoder error")]
@@ -40,171 +48,6 @@ pub enum ParseHitObjectsError {
     UnknownHitObjectType,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct HitObject {
-    pub start_time: f64,
-    pub kind: HitObjectKind,
-    pub samples: Vec<HitSampleInfo>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Pos {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Pos {
-    pub fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
-    }
-}
-
-impl Add for Pos {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self::new(self.x + rhs.x, self.y + rhs.y)
-    }
-}
-
-impl Sub for Pos {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self::new(self.x - rhs.x, self.y - rhs.y)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum HitObjectKind {
-    Circle(HitObjectCircle),
-    Slider(HitObjectSlider),
-    Spinner(HitObjectSpinner),
-    Hold(HitObjectHold),
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct HitObjectCircle {
-    pub pos: Pos,
-    pub new_combo: bool,
-    pub combo_offset: i32,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct HitObjectSlider {
-    pub pos: Pos,
-    pub new_combo: bool,
-    pub combo_offset: i32,
-    pub path: SliderPath,
-    pub node_samples: Vec<Vec<HitSampleInfo>>,
-    pub repeat_count: i32,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct HitObjectSpinner {
-    pub pos: Pos,
-    pub duration: f64,
-    pub new_combo: bool,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct HitObjectHold {
-    pub pos_x: f32,
-    pub duration: f64,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct SliderPath {
-    control_points: Box<[PathControlPoint]>,
-    expected_dist: Option<f64>,
-    curve: Option<Curve>,
-}
-
-impl SliderPath {
-    fn new(control_points: &[PathControlPoint], expected_dist: Option<f64>) -> Self {
-        Self {
-            control_points: control_points.into(),
-            expected_dist,
-            curve: None,
-        }
-    }
-
-    pub fn control_points(&self) -> &[PathControlPoint] {
-        self.control_points.as_ref()
-    }
-
-    pub fn expected_dist(&self) -> Option<f64> {
-        self.expected_dist
-    }
-
-    pub fn curve(&mut self) -> &Curve {
-        self.curve
-            .get_or_insert_with(|| Curve::new(&self.control_points, self.expected_dist))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Curve {
-    pub path: Vec<Pos>,
-    pub lengths: Vec<f64>,
-}
-
-impl Curve {
-    pub fn new(curve_points: &[PathControlPoint], expected_len: Option<f64>) -> Self {
-        todo!()
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct PathType {
-    pub kind: SplineType,
-    pub degree: Option<NonZeroI32>,
-}
-
-impl PathType {
-    pub const CATMULL: Self = Self::new(SplineType::Catmull);
-    pub const BEZIER: Self = Self::new(SplineType::BSpline);
-    pub const LINEAR: Self = Self::new(SplineType::Linear);
-    pub const PERFECT_CURVE: Self = Self::new(SplineType::PerfectCurve);
-
-    const fn new(kind: SplineType) -> Self {
-        Self { kind, degree: None }
-    }
-
-    const fn new_b_spline(degree: NonZeroI32) -> Self {
-        Self {
-            kind: SplineType::BSpline,
-            degree: Some(degree),
-        }
-    }
-
-    fn convert(input: &str) -> Self {
-        match input.chars().next() {
-            Some('B') => {
-                if let Ok(Some(degree)) = input[1..].parse().map(NonZeroI32::new) {
-                    if degree.is_positive() {
-                        return Self::new_b_spline(degree);
-                    }
-                }
-
-                Self::BEZIER
-            }
-            Some('L') => Self::LINEAR,
-            Some('P') => Self::PERFECT_CURVE,
-            _ => Self::CATMULL,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum SplineType {
-    #[default]
-    Catmull,
-    BSpline,
-    Linear,
-    PerfectCurve,
-}
-
 #[derive(Copy, Clone)]
 struct HitObjectType(u8);
 
@@ -216,7 +59,7 @@ impl HitObjectType {
     const COMBO_OFFSET: u8 = (1 << 4) | (1 << 5) | (1 << 6);
     const HOLD: u8 = 1 << 7;
 
-    fn has_flag(self, flag: u8) -> bool {
+    const fn has_flag(self, flag: u8) -> bool {
         (self.0 & flag) != 0
     }
 }
@@ -245,30 +88,6 @@ impl BitAndAssign<u8> for HitObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct PathControlPoint {
-    pub pos: Pos,
-    pub path_type: Option<PathType>,
-}
-
-impl Default for PathControlPoint {
-    fn default() -> Self {
-        Self {
-            pos: Pos::new(0.0, 0.0),
-            path_type: Default::default(),
-        }
-    }
-}
-
-impl From<Pos> for PathControlPoint {
-    fn from(pos: Pos) -> Self {
-        Self {
-            pos,
-            path_type: None,
-        }
-    }
-}
-
 #[derive(Copy, Clone, Default)]
 struct HitSoundType(u8);
 
@@ -279,7 +98,7 @@ impl HitSoundType {
     const FINISH: u8 = 4;
     const CLAP: u8 = 5;
 
-    fn has_flag(self, flag: u8) -> bool {
+    const fn has_flag(self, flag: u8) -> bool {
         (self.0 & flag) != 0
     }
 }
@@ -297,96 +116,6 @@ impl FromStr for HitSoundType {
 impl PartialEq<u8> for HitSoundType {
     fn eq(&self, other: &u8) -> bool {
         self.0.eq(other)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HitSampleInfo {
-    pub name: HitSampleInfoName,
-    pub bank: &'static str,
-    pub suffix: Option<String>,
-    pub volume: i32,
-    pub custom_sample_bank: i32,
-    pub bank_specified: bool,
-    pub is_layered: bool,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum HitSampleInfoName {
-    Name(&'static str),
-    File(Option<String>),
-}
-
-impl From<&'static str> for HitSampleInfoName {
-    fn from(name: &'static str) -> Self {
-        Self::Name(name)
-    }
-}
-
-impl From<Option<String>> for HitSampleInfoName {
-    fn from(filename: Option<String>) -> Self {
-        Self::File(filename)
-    }
-}
-
-impl HitSampleInfo {
-    pub const HIT_NORMAL: &'static str = "hitnormal";
-    pub const HIT_WHISTLE: &'static str = "hitwhistle";
-    pub const HIT_FINISH: &'static str = "hitfinish";
-    pub const HIT_CLAP: &'static str = "hitclap";
-
-    pub const BANK_NORMAL: &'static str = "normal";
-    pub const BANK_SOFT: &'static str = "soft";
-    pub const BANK_DRUM: &'static str = "drum";
-
-    fn new(
-        name: impl Into<HitSampleInfoName>,
-        bank: Option<&'static str>,
-        custom_sample_bank: i32,
-        volume: i32,
-    ) -> Self {
-        Self {
-            name: name.into(),
-            bank: bank.unwrap_or(Self::BANK_NORMAL),
-            suffix: (custom_sample_bank >= 2).then(|| custom_sample_bank.to_string()),
-            volume,
-            custom_sample_bank,
-            bank_specified: bank.is_some(),
-            is_layered: false,
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq)]
-enum SampleBank {
-    None,
-    Normal,
-    Soft,
-    Drum,
-}
-
-impl SampleBank {
-    fn to_lowercase_str(self) -> &'static str {
-        match self {
-            SampleBank::None => "none",
-            SampleBank::Normal => "normal",
-            SampleBank::Soft => "soft",
-            SampleBank::Drum => "drum",
-        }
-    }
-}
-
-impl TryFrom<i32> for SampleBank {
-    type Error = ();
-
-    fn try_from(bank: i32) -> Result<Self, Self::Error> {
-        match bank {
-            0 => Ok(Self::None),
-            1 => Ok(Self::Normal),
-            2 => Ok(Self::Soft),
-            3 => Ok(Self::Drum),
-            _ => Err(()),
-        }
     }
 }
 
@@ -437,6 +166,7 @@ impl SampleBankInfo {
     }
 }
 
+/// The parsing state for [`HitObjects`] in [`ParseBeatmap`].
 pub struct HitObjectsState {
     version: FormatVersion,
     first_object: bool,
@@ -530,7 +260,7 @@ impl HitObjectsState {
         ) -> Result<PathControlPoint, ParseHitObjectsError> {
             let mut v = value
                 .split(':')
-                .map(|s| s.parse_with_limits(MAX_COORDINATE_VALUE as f64));
+                .map(|s| s.parse_with_limits(f64::from(MAX_COORDINATE_VALUE)));
 
             let (x, y) = v
                 .next()
@@ -539,7 +269,7 @@ impl HitObjectsState {
 
             let pos = Pos::new(x? as i32 as f32, y? as i32 as f32);
 
-            Ok(PathControlPoint::from(pos - start_pos))
+            Ok(PathControlPoint::new(pos - start_pos))
         }
 
         fn is_linear(p0: Pos, p1: Pos, p2: Pos) -> bool {
@@ -547,14 +277,14 @@ impl HitObjectsState {
         }
 
         let mut path_type = points
-            .get(0)
+            .first()
             .copied()
-            .map(PathType::convert)
+            .map(PathType::new_from_str)
             .ok_or(ParseHitObjectsError::InvalidLine)?;
 
-        let read_offset = first as usize;
+        let read_offset = usize::from(first);
         let readable_points = points.len() - 1;
-        let end_point_len = end_point.is_some() as usize;
+        let end_point_len = usize::from(end_point.is_some());
 
         self.vertices.clear();
         self.vertices
@@ -647,10 +377,40 @@ impl ParseBeatmap for HitObjects {
     type ParseError = ParseHitObjectsError;
     type State = HitObjectsState;
 
-    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let offset = state.version.offset() as f64;
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
 
-        let mut split = line.split(',');
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    // It's preferred to keep the code in-sync with osu!lazer without refactoring.
+    #[allow(clippy::too_many_lines)]
+    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+        let offset = f64::from(state.version.offset());
+
+        let mut split = line.trim_comment().split(',');
 
         let (Some(x), Some(y), Some(start_time), Some(kind), Some(sound_type)) = (
             split.next(),
@@ -671,7 +431,7 @@ impl ParseBeatmap for HitObjects {
         let start_time = start_time_raw + offset;
         let mut hit_object_type: HitObjectType = kind.parse()?;
 
-        let combo_offset = ((hit_object_type & HitObjectType::COMBO_OFFSET) >> 4) as i32;
+        let combo_offset = i32::from((hit_object_type & HitObjectType::COMBO_OFFSET) >> 4);
         hit_object_type &= !HitObjectType::COMBO_OFFSET;
 
         let new_combo = hit_object_type.has_flag(HitObjectType::NEW_COMBO);
@@ -710,7 +470,7 @@ impl ParseBeatmap for HitObjects {
 
             if let Some(next) = split.next() {
                 let new_len = next
-                    .parse_with_limits(MAX_COORDINATE_VALUE as f64)?
+                    .parse_with_limits(f64::from(MAX_COORDINATE_VALUE))?
                     .max(0.0);
 
                 if new_len.abs() >= f64::EPSILON {
@@ -755,7 +515,7 @@ impl ParseBeatmap for HitObjects {
                 pos,
                 new_combo: state.first_object || state.last_object_was_spinner() || new_combo,
                 combo_offset: if new_combo { combo_offset } else { 0 },
-                path: SliderPath::new(&state.curve_points, len),
+                path: SliderPath::new(state.curve_points.clone(), len),
                 node_samples,
                 repeat_count,
             };
@@ -823,7 +583,14 @@ impl ParseBeatmap for HitObjects {
 fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Vec<HitSampleInfo> {
     let mut sound_types = Vec::new();
 
-    if !bank_info.filename.as_ref().is_some_and(|s| !s.is_empty()) {
+    if bank_info.filename.as_ref().is_some_and(|s| !s.is_empty()) {
+        sound_types.push(HitSampleInfo::new(
+            bank_info.filename,
+            None,
+            1,
+            bank_info.volume,
+        ));
+    } else {
         let mut sample = HitSampleInfo::new(
             HitSampleInfo::HIT_NORMAL,
             bank_info.bank_for_normal,
@@ -835,13 +602,6 @@ fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Ve
             sound_type != HitSoundType::NONE && !sound_type.has_flag(HitSoundType::NORMAL);
 
         sound_types.push(sample);
-    } else {
-        sound_types.push(HitSampleInfo::new(
-            bank_info.filename,
-            None,
-            1,
-            bank_info.volume,
-        ));
     }
 
     if sound_type.has_flag(HitSoundType::FINISH) {

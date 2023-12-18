@@ -7,7 +7,8 @@ pub mod hit_objects;
 pub mod metadata;
 pub mod timing_points;
 
-#[derive(Copy, Clone)]
+/// All sections in a `.osu` file.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Section {
     General,
     Editor,
@@ -20,6 +21,7 @@ pub enum Section {
 }
 
 impl Section {
+    /// Try to parse a [`Section`].
     pub fn try_from_line(line: &str) -> Option<Self> {
         let section = line.strip_prefix('[')?.strip_suffix(']')?;
 
@@ -36,5 +38,36 @@ impl Section {
         };
 
         Some(section)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finds_valid_sections() {
+        assert_eq!(Section::try_from_line("[General]"), Some(Section::General));
+        assert_eq!(
+            Section::try_from_line("[Difficulty]"),
+            Some(Section::Difficulty)
+        );
+        assert_eq!(
+            Section::try_from_line("[HitObjects]"),
+            Some(Section::HitObjects)
+        );
+    }
+
+    #[test]
+    fn requires_brackets() {
+        assert_eq!(Section::try_from_line("General"), None);
+        assert_eq!(Section::try_from_line("[General"), None);
+        assert_eq!(Section::try_from_line("General]"), None);
+    }
+
+    #[test]
+    fn denies_invalid_sections() {
+        assert_eq!(Section::try_from_line("abc"), None);
+        assert_eq!(Section::try_from_line("HitObject"), None);
     }
 }

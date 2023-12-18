@@ -2,9 +2,11 @@ use std::{error::Error, io::BufRead, ops::ControlFlow};
 
 use crate::{
     format_version::{FormatVersion, ParseVersionError},
-    reader::{DecoderError, Reader},
+    reader::Reader,
     section::Section,
 };
+
+pub use crate::reader::DecoderError;
 
 pub trait ParseState: Sized {
     fn create(version: FormatVersion) -> Self;
@@ -44,7 +46,7 @@ pub trait ParseBeatmap: Sized {
 
             match flow {
                 SectionFlow::Continue(next) => section = next,
-                SectionFlow::Break(_) => break,
+                SectionFlow::Break(()) => break,
             }
         }
 
@@ -52,44 +54,28 @@ pub trait ParseBeatmap: Sized {
     }
 
     #[allow(unused_variables)]
-    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 
     #[allow(unused_variables)]
-    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        Ok(())
-    }
+    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
 }
 
 fn parse_first_section<R: BufRead>(
@@ -120,17 +106,12 @@ where
             return Ok(ControlFlow::Break(SectionFlow::Continue(next)));
         }
 
-        // TODO: handle comments
-        // if let Some(end) = line.find("//") {
-        //     line = line[..end].trim_end();
-        // }
-
-        f(state, &line).map(ControlFlow::Continue)
+        f(state, line).map(ControlFlow::Continue)
     };
 
     loop {
         match reader.next_line(&mut f) {
-            Ok(Some(Ok(ControlFlow::Continue(_)))) => {}
+            Ok(Some(Ok(ControlFlow::Continue(())))) => {}
             Ok(Some(Ok(ControlFlow::Break(flow)))) => return Ok(flow),
             Ok(Some(Err(err))) => return Err(err),
             Ok(None) => return Ok(SectionFlow::Break(())),

@@ -1,7 +1,6 @@
-use std::str::FromStr;
-
 use crate::{
     format_version::{FormatVersion, ParseVersionError},
+    model::events::{BreakPeriod, EventType, ParseEventTypeError},
     parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
     util::{ParseNumber, ParseNumberError, StrExt},
@@ -13,53 +12,22 @@ pub struct Events {
     pub breaks: Vec<BreakPeriod>,
 }
 
+/// All the ways that parsing a `.osu` file into [`Events`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseEventsError {
     #[error("decoder error")]
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
+    #[error("failed to parse event type")]
+    EventType(#[from] ParseEventTypeError),
     #[error("invalid line")]
     InvalidLine,
     #[error("failed to parse number")]
     Number(#[from] ParseNumberError),
-    #[error("unknown event type")]
-    UnknownEventType,
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub struct BreakPeriod {
-    pub start_time: f64,
-    pub end_time: f64,
-}
-
-enum EventType {
-    Background,
-    Video,
-    Break,
-    Color,
-    Sprite,
-    Sample,
-    Animation,
-}
-
-impl FromStr for EventType {
-    type Err = ParseEventsError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "0" | "Background" => Ok(Self::Background),
-            "1" | "Video" => Ok(Self::Video),
-            "2" | "Break" => Ok(Self::Break),
-            "3" | "Colour" => Ok(Self::Color),
-            "4" | "Sprite" => Ok(Self::Sprite),
-            "5" | "Sample" => Ok(Self::Sample),
-            "6" | "Animation" => Ok(Self::Animation),
-            _ => Err(ParseEventsError::UnknownEventType),
-        }
-    }
-}
-
+/// The parsing state for [`Events`] in [`ParseBeatmap`].
 pub struct EventsState {
     version: FormatVersion,
     events: Events,
@@ -84,8 +52,24 @@ impl ParseBeatmap for Events {
     type ParseError = ParseEventsError;
     type State = EventsState;
 
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
     fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let mut split = line.split(',');
+        let mut split = line.trim_comment().split(',');
 
         let (Some(event_type), Some(start_time), Some(event_params)) =
             (split.next(), split.next(), split.next())
@@ -123,7 +107,7 @@ impl ParseBeatmap for Events {
             }
             EventType::Background => state.events.background_file = event_params.clean_filename(),
             EventType::Break => {
-                let offset = state.version.offset() as f64;
+                let offset = f64::from(state.version.offset());
                 let start_time = f64::parse(start_time)? + offset;
                 let end_time = start_time.max(f64::parse(event_params)? + offset);
 
@@ -132,11 +116,21 @@ impl ParseBeatmap for Events {
                     end_time,
                 });
             }
-            EventType::Color => {}
-            EventType::Sample => {}
-            EventType::Animation => {}
+            EventType::Color | EventType::Sample | EventType::Animation => {}
         }
 
+        Ok(())
+    }
+
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
         Ok(())
     }
 }

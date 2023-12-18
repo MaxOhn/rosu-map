@@ -19,6 +19,7 @@ pub struct Metadata {
     pub beatmap_set_id: i32,
 }
 
+/// All the ways that parsing a `.osu` file into [`Metadata`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseMetadataError {
     #[error("decoder error")]
@@ -29,6 +30,7 @@ pub enum ParseMetadataError {
     Number(#[from] ParseNumberError),
 }
 
+/// The parsing state for [`Metadata`] in [`ParseBeatmap`].
 pub type MetadataState = Metadata;
 
 impl ParseState for MetadataState {
@@ -40,6 +42,14 @@ impl ParseState for MetadataState {
 impl ParseBeatmap for Metadata {
     type ParseError = ParseMetadataError;
     type State = Self;
+
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
 
     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
         let KeyValue { key, value } = KeyValue::new(line);
@@ -58,6 +68,26 @@ impl ParseBeatmap for Metadata {
             _ => {}
         }
 
+        Ok(())
+    }
+
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+        Ok(())
+    }
+
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
         Ok(())
     }
 }

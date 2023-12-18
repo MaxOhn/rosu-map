@@ -1,5 +1,6 @@
 use std::{char, io, str};
 
+/// All the ways that decoding a `.osu` file can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum DecoderError {
     #[error("line did not match encoding")]

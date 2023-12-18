@@ -15,9 +15,7 @@ pub struct Reader<R> {
 
 impl<R: BufRead> Reader<R> {
     pub fn new(inner: R) -> Result<Self, DecoderError> {
-        Ok(Self {
-            decoder: Decoder::new(inner)?,
-        })
+        Decoder::new(inner).map(|decoder| Self { decoder })
     }
 
     pub fn next_line<F, O>(&mut self, f: F) -> Result<Option<O>, DecoderError>

@@ -5,8 +5,8 @@ use super::{
     u16_iter::{U16BeIterator, U16LeIterator},
 };
 
-#[derive(Copy, Clone, Debug, Default)]
-pub(super) enum Encoding {
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum Encoding {
     #[default]
     Utf8,
     Utf16BE,
@@ -14,7 +14,7 @@ pub(super) enum Encoding {
 }
 
 impl Encoding {
-    pub fn from_bom(bom: &[u8]) -> (Self, usize) {
+    pub const fn from_bom(bom: &[u8]) -> (Self, usize) {
         match bom {
             [0xEF, 0xBB, 0xBF, ..] => (Self::Utf8, 3),
             [0xFF, 0xFE, ..] => (Self::Utf16LE, 2),
@@ -23,6 +23,9 @@ impl Encoding {
         }
     }
 
+    /// Decodes the given `src` and returns it as a `&str`.
+    ///
+    /// In case of UTF-16, the result will be stored in `dst`.
     pub fn decode<'a>(
         self,
         src: &'a mut [u8],
@@ -35,7 +38,7 @@ impl Encoding {
         }
     }
 
-    fn decode_utf16<'a, S>(src: S, dst: &'a mut String) -> Result<&'a str, DecoderError>
+    fn decode_utf16<S>(src: S, dst: &mut String) -> Result<&str, DecoderError>
     where
         S: Iterator<Item = u16>,
     {

@@ -53,7 +53,7 @@ struct DoubleByteIterator<'a> {
 }
 
 impl<'a> DoubleByteIterator<'a> {
-    fn new(bytes: &'a [u8]) -> Result<Self, DecoderError> {
+    const fn new(bytes: &'a [u8]) -> Result<Self, DecoderError> {
         if bytes.len() % 2 != 0 {
             return Err(DecoderError::IncorrectEncoding);
         }
@@ -76,5 +76,34 @@ impl Iterator for DoubleByteIterator<'_> {
         let len = self.bytes.len() / 2;
 
         (len, Some(len))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_len() {
+        assert!(matches!(
+            DoubleByteIterator::new(&[1, 2, 3]),
+            Err(DecoderError::IncorrectEncoding)
+        ));
+    }
+
+    #[test]
+    fn le_works() {
+        let mut iter = U16LeIterator::new(&[b'1', 0, b'Z', 0]).unwrap();
+        assert_eq!(iter.next(), Some(b'1' as u16));
+        assert_eq!(iter.next(), Some(b'Z' as u16));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn be_works() {
+        let mut iter = U16BeIterator::new(&[0, b'1', 0, b'Z']).unwrap();
+        assert_eq!(iter.next(), Some(b'1' as u16));
+        assert_eq!(iter.next(), Some(b'Z' as u16));
+        assert_eq!(iter.next(), None);
     }
 }

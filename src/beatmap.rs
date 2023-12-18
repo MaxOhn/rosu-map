@@ -7,23 +7,33 @@ use std::{
 
 use crate::{
     format_version::{FormatVersion, ParseVersionError},
+    model::{
+        colors::{Color, CustomColors},
+        control_points::{DifficultyPoint, EffectPoint, SamplePoint, TimingPoint},
+        countdown::CountdownType,
+        events::BreakPeriod,
+        hit_objects::HitObject,
+        mode::GameMode,
+    },
     parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
     section::{
-        colors::{Color, Colors, ColorsState, CustomColors, ParseColorsError},
+        colors::{Colors, ColorsState, ParseColorsError},
         difficulty::{Difficulty, DifficultyState, ParseDifficultyError},
         editor::{Editor, EditorState, ParseEditorError},
-        events::{BreakPeriod, Events, EventsState, ParseEventsError},
-        general::{CountdownType, GameMode, General, GeneralState, ParseGeneralError},
-        hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError},
+        events::{Events, EventsState, ParseEventsError},
+        general::{General, GeneralState, ParseGeneralError},
+        hit_objects::{HitObjects, HitObjectsState, ParseHitObjectsError},
         metadata::{Metadata, MetadataState, ParseMetadataError},
         timing_points::{ParseTimingPointsError, TimingPoints, TimingPointsState},
     },
+    util::SortedVec,
 };
 
-#[derive(Debug, Default)]
+/// Fully parsed content of a `.osu` file.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Beatmap {
-    pub format_version: i32,
+    pub format_version: FormatVersion,
 
     // General
     pub audio_file: String,
@@ -71,9 +81,12 @@ pub struct Beatmap {
     pub breaks: Vec<BreakPeriod>,
 
     // TimingPoints
-    _a: (),
+    pub timing_points: SortedVec<TimingPoint>,
+    pub difficulty_points: SortedVec<DifficultyPoint>,
+    pub effect_points: SortedVec<EffectPoint>,
+    pub sample_points: SortedVec<SamplePoint>,
 
-    // Colours
+    // Colors
     pub custom_combo_colors: Vec<Color>,
     pub custom_colors: CustomColors,
 
@@ -82,12 +95,16 @@ pub struct Beatmap {
 }
 
 impl Beatmap {
+    /// Parse a [`Beatmap`] by providing a path to a `.osu` file.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, ParseBeatmapError> {
-        let file = File::open(path).map_err(ParseBeatmapError::OpenFile)?;
-
-        Self::parse(BufReader::new(file))
+        File::open(path)
+            .map_err(ParseBeatmapError::OpenFile)
+            .map(BufReader::new)
+            .and_then(Self::parse)
     }
 
+    /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
+    /// slice of bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ParseBeatmapError> {
         Self::parse(Cursor::new(bytes))
     }
@@ -96,11 +113,14 @@ impl Beatmap {
 impl FromStr for Beatmap {
     type Err = ParseBeatmapError;
 
+    /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
+    /// string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::parse(Cursor::new(s))
     }
 }
 
+/// All the ways that parsing a `.osu` file into [`Beatmap`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseBeatmapError {
     #[error("failed to open file")]
@@ -127,6 +147,7 @@ pub enum ParseBeatmapError {
     HitOjects(#[from] ParseHitObjectsError),
 }
 
+/// The parsing state for [`Beatmap`] in [`ParseBeatmap`].
 pub struct BeatmapState {
     version: FormatVersion,
     general: GeneralState,
@@ -156,6 +177,7 @@ impl ParseState for BeatmapState {
 }
 
 impl From<BeatmapState> for Beatmap {
+    #[allow(clippy::useless_conversion)]
     fn from(state: BeatmapState) -> Self {
         let general: General = state.general.into();
         let editor: Editor = state.editor.into();
@@ -167,7 +189,7 @@ impl From<BeatmapState> for Beatmap {
         let hit_objects: HitObjects = state.hit_objects.into();
 
         Beatmap {
-            format_version: state.version.0,
+            format_version: state.version,
             audio_file: general.audio_file,
             audio_lead_in: general.audio_lead_in,
             preview_time: general.preview_time,
@@ -203,7 +225,10 @@ impl From<BeatmapState> for Beatmap {
             slider_tick_rate: difficulty.slider_tick_rate,
             background_file: events.background_file,
             breaks: events.breaks,
-            _a: todo!(),
+            timing_points: timing_points.timing_points,
+            difficulty_points: timing_points.difficulty_points,
+            effect_points: timing_points.effect_points,
+            sample_points: timing_points.sample_points,
             custom_combo_colors: colors.custom_combo_colors,
             custom_colors: colors.custom_colors,
             hit_objects: hit_objects.hit_objects,
@@ -216,7 +241,10 @@ impl ParseBeatmap for Beatmap {
     type State = BeatmapState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        General::parse_general(&mut state.general, line).map_err(ParseBeatmapError::General)
+        General::parse_general(&mut state.general, line)?;
+        TimingPoints::parse_general(&mut state.timing_points, line)?;
+
+        Ok(())
     }
 
     fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {

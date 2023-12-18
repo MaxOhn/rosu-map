@@ -53,27 +53,17 @@ impl<R: BufRead> Decoder<R> {
             return Ok(None);
         }
 
-        if let Encoding::Utf16LE = self.encoding {
-            Self::read_byte(&mut self.inner, &mut self.read_buf)?;
+        // Reading up to b'\n' will miss the final b'\0' for an UTF-16LE encoded
+        // string so we need to read an additional byte.
+        if self.encoding == Encoding::Utf16LE && self.read_buf.ends_with(b"\n") {
+            let mut byte = 0;
+            self.inner.read_exact(slice::from_mut(&mut byte))?;
+            self.read_buf.push(byte);
         }
 
         self.encoding
             .decode(&mut self.read_buf, &mut self.decode_buf)
             .map(str::trim)
             .map(Some)
-    }
-
-    // Reading up to b'\n' will miss the final b'\0' for an UTF-16LE encoded
-    // string so we need to read an additional byte.
-    fn read_byte(reader: &mut R, buf: &mut Vec<u8>) -> Result<(), DecoderError> {
-        if !buf.ends_with(b"\n") {
-            return Ok(());
-        }
-
-        let mut byte = 0;
-        reader.read_exact(slice::from_mut(&mut byte))?;
-        buf.push(byte);
-
-        Ok(())
     }
 }

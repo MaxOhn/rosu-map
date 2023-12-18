@@ -7,10 +7,12 @@ use crate::{
 
 const VERSION_PREFIX: &str = "osu file format v";
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+/// The version format of an `.osu` file's content.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct FormatVersion(pub i32);
 
 impl FormatVersion {
+    /// The currently latest version.
     pub const LATEST: i32 = 14;
 
     pub(crate) fn parse<R: BufRead>(reader: &mut Reader<R>) -> Result<Self, ParseVersionError> {
@@ -34,7 +36,7 @@ impl FormatVersion {
 
         loop {
             match reader.next_line(f)? {
-                Some(ControlFlow::Continue(_)) => {}
+                Some(ControlFlow::Continue(())) => {}
                 Some(ControlFlow::Break(Ok(version))) => return Ok(Self(version)),
                 Some(ControlFlow::Break(Err(err))) => return Err(err),
                 None => return Err(ParseVersionError::UnknownFileFormat),
@@ -42,7 +44,7 @@ impl FormatVersion {
         }
     }
 
-    pub fn offset(self) -> i32 {
+    pub(crate) const fn offset(self) -> i32 {
         const EARLY_VERSION_TIMING_OFFSET: i32 = 24;
 
         if self.0 < 5 {
@@ -53,6 +55,13 @@ impl FormatVersion {
     }
 }
 
+impl PartialEq<i32> for FormatVersion {
+    fn eq(&self, other: &i32) -> bool {
+        self.0.eq(other)
+    }
+}
+
+/// All the ways that parsing a `.osu` file into [`FormatVersion`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseVersionError {
     #[error("decoder error")]
@@ -61,4 +70,66 @@ pub enum ParseVersionError {
     Number(#[from] ParseNumberError),
     #[error("unknown file format")]
     UnknownFileFormat,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::*;
+
+    #[test]
+    fn finds_version() {
+        let mut reader = Reader::new(Cursor::new("osu file format v42")).unwrap();
+        assert_eq!(
+            FormatVersion::parse(&mut reader).unwrap(),
+            FormatVersion(42)
+        );
+    }
+
+    #[test]
+    fn fails_on_comment() {
+        let mut reader = Reader::new(Cursor::new("osu file format v42 // comment")).unwrap();
+        assert!(matches!(
+            FormatVersion::parse(&mut reader),
+            Err(ParseVersionError::Number(_))
+        ));
+    }
+
+    #[test]
+    fn skips_whitespace() {
+        let mut reader = Reader::new(Cursor::new(
+            "
+  
+       
+            osu file format v42",
+        ))
+        .unwrap();
+        assert!(matches!(
+            FormatVersion::parse(&mut reader),
+            Ok(FormatVersion(42))
+        ));
+    }
+
+    #[test]
+    fn fails_on_wrong_prefix() {
+        let mut reader = Reader::new(Cursor::new("file format v42 // comment")).unwrap();
+        assert!(matches!(
+            FormatVersion::parse(&mut reader),
+            Err(ParseVersionError::UnknownFileFormat)
+        ));
+
+        let mut reader = Reader::new(Cursor::new(
+            "
+
+  a
+        
+        osu file format v42",
+        ))
+        .unwrap();
+        assert!(matches!(
+            FormatVersion::parse(&mut reader),
+            Err(ParseVersionError::UnknownFileFormat)
+        ));
+    }
 }
