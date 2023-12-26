@@ -10,8 +10,15 @@
     clippy::match_same_arms,
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    clippy::explicit_iter_loop
 )]
+
+#[macro_use]
+mod macros;
+
+mod encode;
+mod reader;
 
 pub mod beatmap;
 pub mod format_version;
@@ -19,5 +26,3 @@ pub mod model;
 pub mod parse;
 pub mod section;
 pub mod util;
-
-mod reader;

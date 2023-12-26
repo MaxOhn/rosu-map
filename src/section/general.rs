@@ -28,6 +28,25 @@ pub struct General {
     pub countdown_offset: i32,
 }
 
+section_keys! {
+    pub enum GeneralKey {
+        AudioFilename,
+        AudioLeadIn,
+        PreviewTime,
+        SampleSet,
+        SampleVolume,
+        StackLeniency,
+        Mode,
+        LetterboxInBreaks,
+        SpecialStyle,
+        WidescreenStoryboard,
+        EpilepsyWarning,
+        SamplesMatchPlaybackRate,
+        Countdown,
+        CountdownOffset,
+    }
+}
+
 /// All the ways that parsing a `.osu` file into [`General`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseGeneralError {
@@ -71,12 +90,14 @@ impl ParseBeatmap for General {
     type State = GeneralState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line.trim_comment());
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
+            return Ok(());
+        };
 
         match key {
-            "AudioFilename" => state.general.audio_file = value.to_standardized_path(),
-            "AudioLeadIn" => state.general.audio_lead_in = f64::from(i32::parse(value)?),
-            "PreviewTime" => {
+            GeneralKey::AudioFilename => state.general.audio_file = value.to_standardized_path(),
+            GeneralKey::AudioLeadIn => state.general.audio_lead_in = f64::from(i32::parse(value)?),
+            GeneralKey::PreviewTime => {
                 let time = i32::parse(value)?;
 
                 state.general.preview_time = if time == -1 {
@@ -85,20 +106,23 @@ impl ParseBeatmap for General {
                     time + state.version.offset()
                 };
             }
-            "SampleSet" => state.general.default_sample_bank = value.parse()?,
-            "SampleVolume" => state.general.default_sample_volume = value.parse_num()?,
-            "StackLeniency" => state.general.stack_leniency = value.parse_num()?,
-            "Mode" => state.general.mode = value.parse()?,
-            "LetterboxInBreaks" => state.general.letterbox_in_breaks = i32::parse(value)? == 1,
-            "SpecialStyle" => state.general.special_style = i32::parse(value)? == 1,
-            "WidescreenStoryboard" => state.general.widescreen_storyboard = i32::parse(value)? == 1,
-            "EpilepsyWarning" => state.general.epilepsy_warning = i32::parse(value)? == 1,
-            "SamplesMatchPlaybackRate" => {
+            GeneralKey::SampleSet => state.general.default_sample_bank = value.parse()?,
+            GeneralKey::SampleVolume => state.general.default_sample_volume = value.parse_num()?,
+            GeneralKey::StackLeniency => state.general.stack_leniency = value.parse_num()?,
+            GeneralKey::Mode => state.general.mode = value.parse()?,
+            GeneralKey::LetterboxInBreaks => {
+                state.general.letterbox_in_breaks = i32::parse(value)? == 1;
+            }
+            GeneralKey::SpecialStyle => state.general.special_style = i32::parse(value)? == 1,
+            GeneralKey::WidescreenStoryboard => {
+                state.general.widescreen_storyboard = i32::parse(value)? == 1;
+            }
+            GeneralKey::EpilepsyWarning => state.general.epilepsy_warning = i32::parse(value)? == 1,
+            GeneralKey::SamplesMatchPlaybackRate => {
                 state.general.samples_match_playback_rate = i32::parse(value)? == 1;
             }
-            "Countdown" => state.general.countdown = value.parse()?,
-            "CountdownOffset" => state.general.countdown_offset = value.parse_num()?,
-            _ => {}
+            GeneralKey::Countdown => state.general.countdown = value.parse()?,
+            GeneralKey::CountdownOffset => state.general.countdown_offset = value.parse_num()?,
         }
 
         Ok(())

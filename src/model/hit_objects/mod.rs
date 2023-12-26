@@ -16,6 +16,17 @@ pub struct HitObject {
     pub samples: Vec<HitSampleInfo>,
 }
 
+impl HitObject {
+    pub fn end_time(&self) -> f64 {
+        match self.kind {
+            HitObjectKind::Circle(_) => self.start_time,
+            HitObjectKind::Slider(ref h) => todo!(),
+            HitObjectKind::Spinner(ref h) => self.start_time + h.duration,
+            HitObjectKind::Hold(ref h) => self.start_time + h.duration,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum HitObjectKind {
     Circle(HitObjectCircle),

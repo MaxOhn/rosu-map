@@ -13,7 +13,7 @@ use crate::{
             slider::{HitObjectSlider, PathControlPoint, PathType, SliderPath},
             HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSpinner,
         },
-        hit_samples::{HitSampleInfo, SampleBank},
+        hit_samples::{HitSampleInfo, HitSampleInfoName, SampleBank},
     },
     parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
@@ -48,19 +48,56 @@ pub enum ParseHitObjectsError {
     UnknownHitObjectType,
 }
 
-#[derive(Copy, Clone)]
-struct HitObjectType(u8);
+#[derive(Copy, Clone, Default)]
+pub(crate) struct HitObjectType(i32);
 
 impl HitObjectType {
-    const CIRCLE: u8 = 1;
-    const SLIDER: u8 = 1 << 1;
-    const NEW_COMBO: u8 = 1 << 2;
-    const SPINNER: u8 = 1 << 3;
-    const COMBO_OFFSET: u8 = (1 << 4) | (1 << 5) | (1 << 6);
-    const HOLD: u8 = 1 << 7;
+    const CIRCLE: i32 = 1;
+    const SLIDER: i32 = 1 << 1;
+    const NEW_COMBO: i32 = 1 << 2;
+    const SPINNER: i32 = 1 << 3;
+    const COMBO_OFFSET: i32 = (1 << 4) | (1 << 5) | (1 << 6);
+    const HOLD: i32 = 1 << 7;
 
-    const fn has_flag(self, flag: u8) -> bool {
+    const fn has_flag(self, flag: i32) -> bool {
         (self.0 & flag) != 0
+    }
+}
+
+impl From<&HitObject> for HitObjectType {
+    fn from(hit_object: &HitObject) -> Self {
+        let mut kind = 0;
+
+        match hit_object.kind {
+            HitObjectKind::Circle(ref h) => {
+                kind |= h.combo_offset << 4;
+
+                if h.new_combo {
+                    kind |= Self::NEW_COMBO;
+                }
+
+                kind |= Self::CIRCLE;
+            }
+            HitObjectKind::Slider(ref h) => {
+                kind |= h.combo_offset << 4;
+
+                if h.new_combo {
+                    kind |= Self::NEW_COMBO;
+                }
+
+                kind |= Self::SLIDER;
+            }
+            HitObjectKind::Spinner(ref h) => {
+                if h.new_combo {
+                    kind |= Self::NEW_COMBO;
+                }
+
+                kind |= Self::SPINNER;
+            }
+            HitObjectKind::Hold(_) => kind |= Self::HOLD,
+        }
+
+        Self(kind)
     }
 }
 
@@ -74,22 +111,28 @@ impl FromStr for HitObjectType {
     }
 }
 
-impl BitAnd<u8> for HitObjectType {
-    type Output = u8;
+impl From<HitObjectType> for i32 {
+    fn from(kind: HitObjectType) -> Self {
+        kind.0
+    }
+}
 
-    fn bitand(self, rhs: u8) -> Self::Output {
+impl BitAnd<i32> for HitObjectType {
+    type Output = i32;
+
+    fn bitand(self, rhs: i32) -> Self::Output {
         self.0 & rhs
     }
 }
 
-impl BitAndAssign<u8> for HitObjectType {
-    fn bitand_assign(&mut self, rhs: u8) {
+impl BitAndAssign<i32> for HitObjectType {
+    fn bitand_assign(&mut self, rhs: i32) {
         self.0 &= rhs;
     }
 }
 
 #[derive(Copy, Clone, Default)]
-struct HitSoundType(u8);
+pub(crate) struct HitSoundType(u8);
 
 impl HitSoundType {
     const NONE: u8 = 0;
@@ -100,6 +143,31 @@ impl HitSoundType {
 
     const fn has_flag(self, flag: u8) -> bool {
         (self.0 & flag) != 0
+    }
+}
+
+impl From<&[HitSampleInfo]> for HitSoundType {
+    fn from(samples: &[HitSampleInfo]) -> Self {
+        let mut kind = Self::NONE;
+
+        for sample in samples.iter() {
+            // false positive
+            #[allow(clippy::match_wildcard_for_single_variants)]
+            match sample.name {
+                HitSampleInfoName::Name(HitSampleInfo::HIT_WHISTLE) => kind |= Self::WHISTLE,
+                HitSampleInfoName::Name(HitSampleInfo::HIT_FINISH) => kind |= Self::FINISH,
+                HitSampleInfoName::Name(HitSampleInfo::HIT_CLAP) => kind |= Self::CLAP,
+                _ => {}
+            }
+        }
+
+        Self(kind)
+    }
+}
+
+impl From<HitSoundType> for u8 {
+    fn from(kind: HitSoundType) -> Self {
+        kind.0
     }
 }
 
@@ -431,7 +499,7 @@ impl ParseBeatmap for HitObjects {
         let start_time = start_time_raw + offset;
         let mut hit_object_type: HitObjectType = kind.parse()?;
 
-        let combo_offset = i32::from((hit_object_type & HitObjectType::COMBO_OFFSET) >> 4);
+        let combo_offset = (hit_object_type & HitObjectType::COMBO_OFFSET) >> 4;
         hit_object_type &= !HitObjectType::COMBO_OFFSET;
 
         let new_combo = hit_object_type.has_flag(HitObjectType::NEW_COMBO);

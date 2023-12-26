@@ -19,6 +19,21 @@ pub struct Metadata {
     pub beatmap_set_id: i32,
 }
 
+section_keys! {
+    pub enum MetadataKey {
+        Title,
+        TitleUnicode,
+        Artist,
+        ArtistUnicode,
+        Creator,
+        Version,
+        Source,
+        Tags,
+        BeatmapID,
+        BeatmapSetID,
+    }
+}
+
 /// All the ways that parsing a `.osu` file into [`Metadata`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseMetadataError {
@@ -52,20 +67,21 @@ impl ParseBeatmap for Metadata {
     }
 
     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line);
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
+            return Ok(());
+        };
 
         match key {
-            "Title" => state.title = value.to_owned(),
-            "TitleUnicode" => state.title_unicode = value.to_owned(),
-            "Artist" => state.artist = value.to_owned(),
-            "ArtistUnicode" => state.artist_unicode = value.to_owned(),
-            "Creator" => state.creator = value.to_owned(),
-            "Version" => state.version = value.to_owned(),
-            "Source" => state.source = value.to_owned(),
-            "Tags" => state.tags = value.to_owned(),
-            "BeatmapID" => state.beatmap_id = value.parse_num()?,
-            "BeatmapSetID" => state.beatmap_set_id = value.parse_num()?,
-            _ => {}
+            MetadataKey::Title => state.title = value.to_owned(),
+            MetadataKey::TitleUnicode => state.title_unicode = value.to_owned(),
+            MetadataKey::Artist => state.artist = value.to_owned(),
+            MetadataKey::ArtistUnicode => state.artist_unicode = value.to_owned(),
+            MetadataKey::Creator => state.creator = value.to_owned(),
+            MetadataKey::Version => state.version = value.to_owned(),
+            MetadataKey::Source => state.source = value.to_owned(),
+            MetadataKey::Tags => state.tags = value.to_owned(),
+            MetadataKey::BeatmapID => state.beatmap_id = value.parse_num()?,
+            MetadataKey::BeatmapSetID => state.beatmap_set_id = value.parse_num()?,
         }
 
         Ok(())

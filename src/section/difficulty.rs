@@ -15,6 +15,17 @@ pub struct Difficulty {
     pub slider_tick_rate: f32,
 }
 
+section_keys! {
+    pub enum DifficultyKey {
+        HPDrainRate,
+        CircleSize,
+        OverallDifficulty,
+        ApproachRate,
+        SliderMultiplier,
+        SliderTickRate,
+    }
+}
+
 /// All the ways that parsing a `.osu` file into [`Difficulty`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseDifficultyError {
@@ -64,29 +75,30 @@ impl ParseBeatmap for Difficulty {
     }
 
     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line.trim_comment());
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
+            return Ok(());
+        };
 
         match key {
-            "HPDrainRate" => state.difficulty.hp_drain_rate = value.parse_num()?,
-            "CircleSize" => state.difficulty.circle_size = value.parse_num()?,
-            "OverallDifficulty" => {
+            DifficultyKey::HPDrainRate => state.difficulty.hp_drain_rate = value.parse_num()?,
+            DifficultyKey::CircleSize => state.difficulty.circle_size = value.parse_num()?,
+            DifficultyKey::OverallDifficulty => {
                 state.difficulty.overall_difficulty = value.parse_num()?;
 
                 if !state.has_approach_rate {
                     state.difficulty.approach_rate = state.difficulty.overall_difficulty;
                 }
             }
-            "ApproachRate" => {
+            DifficultyKey::ApproachRate => {
                 state.difficulty.approach_rate = value.parse_num()?;
                 state.has_approach_rate = true;
             }
-            "SliderMultiplier" => {
+            DifficultyKey::SliderMultiplier => {
                 state.difficulty.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6);
             }
-            "SliderTickRate" => {
+            DifficultyKey::SliderTickRate => {
                 state.difficulty.slider_tick_rate = f32::parse(value)?.clamp(0.5, 8.0);
             }
-            _ => {}
         }
 
         Ok(())

@@ -14,6 +14,16 @@ pub struct Editor {
     pub timeline_zoom: f64,
 }
 
+section_keys! {
+    pub enum EditorKey {
+        Bookmarks,
+        DistanceSpacing,
+        BeatDivisor,
+        GridSize,
+        TimelineZoom,
+    }
+}
+
 /// All the ways that parsing a `.osu` file into [`Editor`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseEditorError {
@@ -43,21 +53,22 @@ impl ParseBeatmap for Editor {
     }
 
     fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line.trim_comment());
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
+            return Ok(());
+        };
 
         match key {
-            "Bookmarks" => {
+            EditorKey::Bookmarks => {
                 state.bookmarks = value
                     .split(',')
                     .map(str::parse)
                     .filter_map(Result::ok)
                     .collect();
             }
-            "DistanceSpacing" => state.distance_spacing = value.parse_num()?,
-            "BeatDivisor" => state.beat_divisor = value.parse_num()?,
-            "GridSize" => state.grid_size = value.parse_num()?,
-            "TimelineZoom" => state.timeline_zoom = value.parse_num()?,
-            _ => {}
+            EditorKey::DistanceSpacing => state.distance_spacing = value.parse_num()?,
+            EditorKey::BeatDivisor => state.beat_divisor = value.parse_num()?,
+            EditorKey::GridSize => state.grid_size = value.parse_num()?,
+            EditorKey::TimelineZoom => state.timeline_zoom = value.parse_num()?,
         }
 
         Ok(())

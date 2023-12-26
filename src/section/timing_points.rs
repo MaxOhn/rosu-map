@@ -13,6 +13,8 @@ use crate::{
     util::{KeyValue, ParseNumber, ParseNumberError, SortedVec, StrExt, MAX_PARSE_VALUE},
 };
 
+use super::general::GeneralKey;
+
 #[derive(Default)]
 pub struct TimingPoints {
     pub timing_points: SortedVec<TimingPoint>,
@@ -44,8 +46,8 @@ pub enum ParseTimingPointsError {
     TimingControlPointNaN,
 }
 
-#[derive(Copy, Clone)]
-struct EffectFlags(i32);
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub(crate) struct EffectFlags(i32);
 
 impl EffectFlags {
     const KIAI: i32 = 1 << 0;
@@ -96,12 +98,14 @@ impl ParseBeatmap for TimingPoints {
     type State = TimingPointsState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line);
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
+            return Ok(());
+        };
 
         match key {
-            "SampleSet" => state.default_sample_bank = value.parse()?,
-            "SampleVolume" => state.default_sample_volume = value.parse_num()?,
-            "Mode" => state.mode = value.parse()?,
+            GeneralKey::SampleSet => state.default_sample_bank = value.parse()?,
+            GeneralKey::SampleVolume => state.default_sample_volume = value.parse_num()?,
+            GeneralKey::Mode => state.mode = value.parse()?,
             _ => {}
         }
 

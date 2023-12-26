@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{num::ParseIntError, str::FromStr};
 
 use crate::{
     format_version::{FormatVersion, ParseVersionError},
@@ -8,10 +8,29 @@ use crate::{
     util::{KeyValue, ParseNumberError, StrExt},
 };
 
+use super::UnknownKeyError;
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Colors {
     pub custom_combo_colors: Vec<Color>,
     pub custom_colors: CustomColors,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ColorsKey {
+    Combo,
+    Name(String),
+}
+
+impl FromStr for ColorsKey {
+    type Err = UnknownKeyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Combo" => Ok(Self::Combo),
+            name => Ok(Self::Name(name.to_owned())),
+        }
+    }
 }
 
 /// All the ways that parsing a `.osu` file into [`Colors`] can fail.
@@ -71,7 +90,10 @@ impl ParseBeatmap for Colors {
     }
 
     fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
-        let KeyValue { key, value } = KeyValue::new(line.trim_comment());
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
+            return Ok(());
+        };
+
         let mut split = value.split(',');
 
         let r = split.next();
@@ -86,17 +108,10 @@ impl ParseBeatmap for Colors {
         };
 
         let color = Color::new(r, g, b, 255);
-        let is_combo = key.starts_with("Combo");
 
-        if is_combo {
-            state.custom_combo_colors.push(color);
-        } else {
-            let color = CustomColor {
-                name: key.to_owned(),
-                color,
-            };
-
-            state.custom_colors.insert(color);
+        match key {
+            ColorsKey::Combo => state.custom_combo_colors.push(color),
+            ColorsKey::Name(name) => state.custom_colors.insert(CustomColor { name, color }),
         }
 
         Ok(())

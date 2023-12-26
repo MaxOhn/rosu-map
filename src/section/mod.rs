@@ -41,6 +41,10 @@ impl Section {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+#[error("unknown key")]
+pub struct UnknownKeyError;
+
 #[cfg(test)]
 mod tests {
     use super::*;

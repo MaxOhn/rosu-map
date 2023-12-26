@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     fs::File,
     io::{BufReader, Cursor, Error as IoError},
     path::Path,
@@ -95,6 +96,16 @@ pub struct Beatmap {
 }
 
 impl Beatmap {
+    /// Return the [`DifficultyPoint`] for the given timestamp.
+    ///
+    /// If `time` is before the first difficulty point, `None` is returned.
+    pub fn difficulty_point_at(&self, time: f64) -> Option<&DifficultyPoint> {
+        self.difficulty_points
+            .binary_search_by(|probe| probe.time.partial_cmp(&time).unwrap_or(Ordering::Less))
+            .map_or_else(|i| i.checked_sub(1), Some)
+            .map(|i| &self.difficulty_points[i])
+    }
+
     /// Parse a [`Beatmap`] by providing a path to a `.osu` file.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, ParseBeatmapError> {
         File::open(path)

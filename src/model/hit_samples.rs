@@ -55,6 +55,19 @@ impl HitSampleInfo {
             is_layered: false,
         }
     }
+
+    pub fn lookup_name(&self) -> String {
+        let name = match self.name {
+            HitSampleInfoName::Name(name) => name,
+            HitSampleInfoName::File(_) => "",
+        };
+
+        if let Some(suffix) = self.suffix.as_ref().filter(|suffix| !suffix.is_empty()) {
+            format!("Gameplay/{}-{name}{suffix}", self.bank)
+        } else {
+            format!("Gameplay/{}-{name}", self.bank)
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -73,6 +86,15 @@ impl SampleBank {
             SampleBank::Normal => "normal",
             SampleBank::Soft => "soft",
             SampleBank::Drum => "drum",
+        }
+    }
+
+    pub fn from_lowercase(s: &str) -> Self {
+        match s {
+            "normal" => Self::Normal,
+            "soft" => Self::Soft,
+            "drum" => Self::Drum,
+            _ => Self::None,
         }
     }
 }
