@@ -340,69 +340,37 @@ impl Beatmap {
     }
 
     fn encode_timing_points<W: Write>(&self, writer: &mut W) -> IoResult<()> {
-        #[derive(Debug)]
-        struct ControlPointGroup<'a> {
-            time: f64,
-            effect: &'a EffectPoint,
-            sample: &'a SamplePoint,
-            control: ControlPoint<'a>,
-        }
-
-        #[derive(Debug)]
-        enum ControlPoint<'a> {
-            Timing(&'a TimingPoint),
-            Difficulty(&'a DifficultyPoint),
-            None,
-        }
-
-        // Decoding adds a sample point and an effect point for each line.
-        // Unless the control points were modified manually, each point in
-        // time will have both a sample and an effect point.
-        // FIXME: Handle the case of modified control points.
         let mut groups: Vec<_> = self
             .sample_points
             .iter()
-            .zip(self.effect_points.iter())
-            .map(|(sample, effect)| ControlPointGroup {
-                time: sample.time,
-                effect,
-                sample,
-                control: ControlPoint::None,
-            })
+            .map(ControlPointGroup::from)
             .collect();
-
-        if groups.is_empty() {
-            return Ok(());
-        }
 
         groups.sort_unstable_by(|a, b| a.time.total_cmp(&b.time));
 
+        for effect in self.effect_points.iter() {
+            match groups.binary_search_by(|probe| probe.time.total_cmp(&effect.time)) {
+                Ok(i) => groups[i].effect = Some(effect),
+                Err(i) => groups.insert(i, ControlPointGroup::from(effect)),
+            }
+        }
+
         for timing in self.timing_points.iter() {
-            // `groups` should have an item for each point in time so this
-            // is always `Ok` unless control points were modified manually.
-            // FIXME: Handle the case of modified control points.
-            if let Ok(i) = groups.binary_search_by(|probe| probe.time.total_cmp(&timing.time)) {
-                groups[i].control = ControlPoint::Timing(timing);
-            } else {
-                eprintln!(
-                    "[WARN] Missing timing timestamp {} in groups {groups:?}",
-                    timing.time
-                );
+            match groups.binary_search_by(|probe| probe.time.total_cmp(&timing.time)) {
+                Ok(i) => groups[i].control = ControlPoint::Timing(timing),
+                Err(i) => groups.insert(i, ControlPointGroup::from(timing)),
             }
         }
 
         for difficulty in self.difficulty_points.iter() {
-            // `groups` should have an item for each point in time so this
-            // is always `Ok` unless control points were modified manually.
-            // FIXME: Handle the case of modified control points.
-            if let Ok(i) = groups.binary_search_by(|probe| probe.time.total_cmp(&difficulty.time)) {
-                groups[i].control = ControlPoint::Difficulty(difficulty);
-            } else {
-                eprintln!(
-                    "[WARN] Missing difficulty timestamp {} in groups {groups:?}",
-                    difficulty.time
-                );
+            match groups.binary_search_by(|probe| probe.time.total_cmp(&difficulty.time)) {
+                Ok(i) => groups[i].control = ControlPoint::Difficulty(difficulty),
+                Err(i) => groups.insert(i, ControlPointGroup::from(difficulty)),
             }
+        }
+
+        if groups.is_empty() {
+            return Ok(());
         }
 
         writer.write_all(b"[TimingPoints]\n")?;
@@ -421,9 +389,26 @@ impl Beatmap {
                 ControlPoint::Difficulty(_) | ControlPoint::None => 0,
             };
 
-            let sample_set = group.sample.sample_bank as i32;
-            let sample_idx = group.sample.custom_sample_bank;
-            let volume = group.sample.sample_volume;
+            let sample_set = group
+                .sample
+                .as_ref()
+                .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| {
+                    sample.sample_bank
+                }) as i32;
+
+            let sample_idx = group
+                .sample
+                .as_ref()
+                .map_or(SamplePoint::DEFAULT_CUSTOM_SAMPLE_BANK, |sample| {
+                    sample.custom_sample_bank
+                });
+
+            let volume = group
+                .sample
+                .as_ref()
+                .map_or(SamplePoint::DEFAULT_SAMPLE_VOLUME, |sample| {
+                    sample.sample_volume
+                });
 
             let uninherited = match group.control {
                 ControlPoint::Timing(_) => 1,
@@ -432,7 +417,7 @@ impl Beatmap {
 
             let mut effects = EffectFlags::NONE;
 
-            if group.effect.kiai {
+            if group.effect.as_ref().is_some_and(|effect| effect.kiai) {
                 effects |= EffectFlags::KIAI;
             }
 
@@ -533,6 +518,63 @@ impl Beatmap {
 
         Ok(())
     }
+}
+
+struct ControlPointGroup<'a> {
+    time: f64,
+    effect: Option<&'a EffectPoint>,
+    sample: Option<&'a SamplePoint>,
+    control: ControlPoint<'a>,
+}
+
+impl<'a> From<&'a SamplePoint> for ControlPointGroup<'a> {
+    fn from(sample: &'a SamplePoint) -> Self {
+        Self {
+            time: sample.time,
+            effect: None,
+            sample: Some(sample),
+            control: ControlPoint::None,
+        }
+    }
+}
+
+impl<'a> From<&'a EffectPoint> for ControlPointGroup<'a> {
+    fn from(effect: &'a EffectPoint) -> Self {
+        Self {
+            time: effect.time,
+            effect: Some(effect),
+            sample: None,
+            control: ControlPoint::None,
+        }
+    }
+}
+
+impl<'a> From<&'a DifficultyPoint> for ControlPointGroup<'a> {
+    fn from(difficulty: &'a DifficultyPoint) -> Self {
+        Self {
+            time: difficulty.time,
+            effect: None,
+            sample: None,
+            control: ControlPoint::Difficulty(difficulty),
+        }
+    }
+}
+
+impl<'a> From<&'a TimingPoint> for ControlPointGroup<'a> {
+    fn from(timing: &'a TimingPoint) -> Self {
+        Self {
+            time: timing.time,
+            effect: None,
+            sample: None,
+            control: ControlPoint::Timing(timing),
+        }
+    }
+}
+
+enum ControlPoint<'a> {
+    Timing(&'a TimingPoint),
+    Difficulty(&'a DifficultyPoint),
+    None,
 }
 
 fn add_path_data<W: Write>(
