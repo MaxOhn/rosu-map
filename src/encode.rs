@@ -1,8 +1,8 @@
 use std::io::{Result as IoResult, Write};
 
 use crate::{
-    beatmap::Beatmap,
     model::{
+        beatmap::Beatmap,
         control_points::{DifficultyPoint, EffectPoint, SamplePoint, TimingPoint},
         events::EventType,
         hit_objects::{

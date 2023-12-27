@@ -1,22 +1,22 @@
 use std::{error::Error, io::BufRead, ops::ControlFlow};
 
 use crate::{
-    format_version::{FormatVersion, ParseVersionError},
+    model::format_version::{FormatVersion, ParseVersionError},
     reader::Reader,
     section::Section,
 };
 
 pub use crate::reader::DecoderError;
 
-pub trait ParseState: Sized {
+pub trait DecodeState: Sized {
     fn create(version: FormatVersion) -> Self;
 }
 
-pub trait ParseBeatmap: Sized {
-    type ParseError: Error + From<DecoderError> + From<ParseVersionError>;
-    type State: ParseState + Into<Self>;
+pub trait DecodeBeatmap: Sized {
+    type Error: Error + From<DecoderError> + From<ParseVersionError>;
+    type State: DecodeState + Into<Self>;
 
-    fn parse<R: BufRead>(src: R) -> Result<Self, Self::ParseError> {
+    fn decode<R: BufRead>(src: R) -> Result<Self, Self::Error> {
         let mut reader = Reader::new(src)?;
 
         let version = FormatVersion::parse(&mut reader)?;
@@ -54,28 +54,28 @@ pub trait ParseBeatmap: Sized {
     }
 
     #[allow(unused_variables)]
-    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     #[allow(unused_variables)]
-    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError>;
+    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 }
 
 fn parse_first_section<R: BufRead>(

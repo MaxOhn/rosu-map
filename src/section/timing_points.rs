@@ -1,14 +1,14 @@
 use crate::{
-    format_version::{FormatVersion, ParseVersionError},
+    decode::{DecodeBeatmap, DecodeState},
     model::{
         control_points::{
             DifficultyPoint, EffectPoint, SamplePoint, TimeSignature, TimeSignatureError,
             TimingPoint,
         },
+        format_version::{FormatVersion, ParseVersionError},
         hit_samples::{HitSampleInfo, ParseSampleBankError, SampleBank},
         mode::{GameMode, ParseGameModeError},
     },
-    parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
     util::{KeyValue, ParseNumber, ParseNumberError, SortedVec, StrExt, MAX_PARSE_VALUE},
 };
@@ -59,7 +59,7 @@ impl EffectFlags {
     }
 }
 
-/// The parsing state for [`TimingPoints`] in [`ParseBeatmap`].
+/// The parsing state for [`TimingPoints`] in [`DecodeBeatmap`].
 pub struct TimingPointsState {
     version: FormatVersion,
     default_sample_bank: SampleBank,
@@ -70,7 +70,7 @@ pub struct TimingPointsState {
     timing_points: TimingPoints,
 }
 
-impl ParseState for TimingPointsState {
+impl DecodeState for TimingPointsState {
     fn create(version: FormatVersion) -> Self {
         Self {
             version,
@@ -94,11 +94,11 @@ impl From<TimingPointsState> for TimingPoints {
     }
 }
 
-impl ParseBeatmap for TimingPoints {
-    type ParseError = ParseTimingPointsError;
+impl DecodeBeatmap for TimingPoints {
+    type Error = ParseTimingPointsError;
     type State = TimingPointsState;
 
-    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
             return Ok(());
         };
@@ -113,23 +113,23 @@ impl ParseBeatmap for TimingPoints {
         Ok(())
     }
 
-    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         let mut split = line.trim_comment().split(',');
 
         let (time, beat_len) = split
@@ -240,11 +240,11 @@ impl ParseBeatmap for TimingPoints {
         Ok(())
     }
 
-    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 }

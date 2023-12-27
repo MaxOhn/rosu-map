@@ -1,6 +1,6 @@
 use crate::{
-    format_version::{FormatVersion, ParseVersionError},
-    parse::{ParseBeatmap, ParseState},
+    decode::{DecodeBeatmap, DecodeState},
+    model::format_version::{FormatVersion, ParseVersionError},
     reader::DecoderError,
     util::{KeyValue, ParseNumberError, StrExt},
 };
@@ -45,28 +45,28 @@ pub enum ParseMetadataError {
     Number(#[from] ParseNumberError),
 }
 
-/// The parsing state for [`Metadata`] in [`ParseBeatmap`].
+/// The parsing state for [`Metadata`] in [`DecodeBeatmap`].
 pub type MetadataState = Metadata;
 
-impl ParseState for MetadataState {
+impl DecodeState for MetadataState {
     fn create(_version: FormatVersion) -> Self {
         Self::default()
     }
 }
 
-impl ParseBeatmap for Metadata {
-    type ParseError = ParseMetadataError;
+impl DecodeBeatmap for Metadata {
+    type Error = ParseMetadataError;
     type State = Self;
 
-    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
             return Ok(());
         };
@@ -87,23 +87,23 @@ impl ParseBeatmap for Metadata {
         Ok(())
     }
 
-    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 }

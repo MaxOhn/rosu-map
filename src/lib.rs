@@ -20,9 +20,12 @@ mod macros;
 mod encode;
 mod reader;
 
-pub mod beatmap;
-pub mod format_version;
+pub mod decode;
 pub mod model;
-pub mod parse;
 pub mod section;
 pub mod util;
+
+pub use crate::{
+    decode::{DecodeBeatmap, DecodeState},
+    model::beatmap::Beatmap,
+};

@@ -1,5 +1,4 @@
 use std::{
-    cmp::Ordering,
     fs::File,
     io::{BufReader, Cursor, Error as IoError},
     path::Path,
@@ -7,16 +6,16 @@ use std::{
 };
 
 use crate::{
-    format_version::{FormatVersion, ParseVersionError},
+    decode::{DecodeBeatmap, DecodeState},
     model::{
         colors::{Color, CustomColors},
         control_points::{DifficultyPoint, EffectPoint, SamplePoint, TimingPoint},
         countdown::CountdownType,
         events::BreakPeriod,
+        format_version::{FormatVersion, ParseVersionError},
         hit_objects::HitObject,
         mode::GameMode,
     },
-    parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
     section::{
         colors::{Colors, ColorsState, ParseColorsError},
@@ -96,28 +95,18 @@ pub struct Beatmap {
 }
 
 impl Beatmap {
-    /// Return the [`DifficultyPoint`] for the given timestamp.
-    ///
-    /// If `time` is before the first difficulty point, `None` is returned.
-    pub fn difficulty_point_at(&self, time: f64) -> Option<&DifficultyPoint> {
-        self.difficulty_points
-            .binary_search_by(|probe| probe.time.partial_cmp(&time).unwrap_or(Ordering::Less))
-            .map_or_else(|i| i.checked_sub(1), Some)
-            .map(|i| &self.difficulty_points[i])
-    }
-
     /// Parse a [`Beatmap`] by providing a path to a `.osu` file.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, ParseBeatmapError> {
         File::open(path)
             .map_err(ParseBeatmapError::OpenFile)
             .map(BufReader::new)
-            .and_then(Self::parse)
+            .and_then(Self::decode)
     }
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// slice of bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ParseBeatmapError> {
-        Self::parse(Cursor::new(bytes))
+        Self::decode(Cursor::new(bytes))
     }
 }
 
@@ -127,7 +116,7 @@ impl FromStr for Beatmap {
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::parse(Cursor::new(s))
+        Self::decode(Cursor::new(s))
     }
 }
 
@@ -158,7 +147,7 @@ pub enum ParseBeatmapError {
     HitOjects(#[from] ParseHitObjectsError),
 }
 
-/// The parsing state for [`Beatmap`] in [`ParseBeatmap`].
+/// The parsing state for [`Beatmap`] in [`DecodeBeatmap`].
 pub struct BeatmapState {
     version: FormatVersion,
     general: GeneralState,
@@ -171,7 +160,7 @@ pub struct BeatmapState {
     hit_objects: HitObjectsState,
 }
 
-impl ParseState for BeatmapState {
+impl DecodeState for BeatmapState {
     fn create(version: FormatVersion) -> Self {
         Self {
             version,
@@ -247,44 +236,44 @@ impl From<BeatmapState> for Beatmap {
     }
 }
 
-impl ParseBeatmap for Beatmap {
-    type ParseError = ParseBeatmapError;
+impl DecodeBeatmap for Beatmap {
+    type Error = ParseBeatmapError;
     type State = BeatmapState;
 
-    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         General::parse_general(&mut state.general, line)?;
         TimingPoints::parse_general(&mut state.timing_points, line)?;
 
         Ok(())
     }
 
-    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         Editor::parse_editor(&mut state.editor, line).map_err(ParseBeatmapError::Editor)
     }
 
-    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         Metadata::parse_metadata(&mut state.metadata, line).map_err(ParseBeatmapError::Metadata)
     }
 
-    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         Difficulty::parse_difficulty(&mut state.difficulty, line)
             .map_err(ParseBeatmapError::Difficulty)
     }
 
-    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         Events::parse_events(&mut state.events, line).map_err(ParseBeatmapError::Events)
     }
 
-    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         TimingPoints::parse_timing_points(&mut state.timing_points, line)
             .map_err(ParseBeatmapError::TimingPoints)
     }
 
-    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         Colors::parse_colors(&mut state.colors, line).map_err(ParseBeatmapError::Colors)
     }
 
-    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         HitObjects::parse_hit_objects(&mut state.hit_objects, line)
             .map_err(ParseBeatmapError::HitOjects)
     }

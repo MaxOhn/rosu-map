@@ -1,7 +1,9 @@
 use crate::{
-    format_version::{FormatVersion, ParseVersionError},
-    model::events::{BreakPeriod, EventType, ParseEventTypeError},
-    parse::{ParseBeatmap, ParseState},
+    decode::{DecodeBeatmap, DecodeState},
+    model::{
+        events::{BreakPeriod, EventType, ParseEventTypeError},
+        format_version::{FormatVersion, ParseVersionError},
+    },
     reader::DecoderError,
     util::{ParseNumber, ParseNumberError, StrExt},
 };
@@ -27,13 +29,13 @@ pub enum ParseEventsError {
     Number(#[from] ParseNumberError),
 }
 
-/// The parsing state for [`Events`] in [`ParseBeatmap`].
+/// The parsing state for [`Events`] in [`DecodeBeatmap`].
 pub struct EventsState {
     version: FormatVersion,
     events: Events,
 }
 
-impl ParseState for EventsState {
+impl DecodeState for EventsState {
     fn create(version: FormatVersion) -> Self {
         Self {
             version,
@@ -48,27 +50,27 @@ impl From<EventsState> for Events {
     }
 }
 
-impl ParseBeatmap for Events {
-    type ParseError = ParseEventsError;
+impl DecodeBeatmap for Events {
+    type Error = ParseEventsError;
     type State = EventsState;
 
-    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         let mut split = line.trim_comment().split(',');
 
         let (Some(event_type), Some(start_time), Some(event_params)) =
@@ -122,15 +124,15 @@ impl ParseBeatmap for Events {
         Ok(())
     }
 
-    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 }

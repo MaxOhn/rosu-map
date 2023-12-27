@@ -7,15 +7,15 @@ use std::{
 };
 
 use crate::{
-    format_version::{FormatVersion, ParseVersionError},
+    decode::{DecodeBeatmap, DecodeState},
     model::{
+        format_version::{FormatVersion, ParseVersionError},
         hit_objects::{
             slider::{HitObjectSlider, PathControlPoint, PathType, SliderPath},
             HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSpinner,
         },
         hit_samples::{HitSampleInfo, HitSampleInfoName, SampleBank},
     },
-    parse::{ParseBeatmap, ParseState},
     reader::DecoderError,
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
 };
@@ -234,7 +234,7 @@ impl SampleBankInfo {
     }
 }
 
-/// The parsing state for [`HitObjects`] in [`ParseBeatmap`].
+/// The parsing state for [`HitObjects`] in [`DecodeBeatmap`].
 pub struct HitObjectsState {
     version: FormatVersion,
     first_object: bool,
@@ -419,7 +419,7 @@ impl HitObjectsState {
     }
 }
 
-impl ParseState for HitObjectsState {
+impl DecodeState for HitObjectsState {
     fn create(version: FormatVersion) -> Self {
         Self {
             version,
@@ -441,41 +441,41 @@ impl From<HitObjectsState> for HitObjects {
 
 const MAX_COORDINATE_VALUE: i32 = 131_072;
 
-impl ParseBeatmap for HitObjects {
-    type ParseError = ParseHitObjectsError;
+impl DecodeBeatmap for HitObjects {
+    type Error = ParseHitObjectsError;
     type State = HitObjectsState;
 
-    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::ParseError> {
+    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
     // It's preferred to keep the code in-sync with osu!lazer without refactoring.
     #[allow(clippy::too_many_lines)]
-    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::ParseError> {
+    fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         let offset = f64::from(state.version.offset());
 
         let mut split = line.trim_comment().split(',');

@@ -1,4 +1,4 @@
-use rosu_map::beatmap::Beatmap;
+use rosu_map::Beatmap;
 
 #[test]
 fn utf8_no_bom() {
