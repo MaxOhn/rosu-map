@@ -1,23 +1,23 @@
 use std::cmp::Ordering;
 
-use crate::{model::hit_samples::HitSampleInfo, util::Sortable};
+use crate::{model::hit_samples::SampleBank, util::Sortable};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SamplePoint {
     pub time: f64,
-    pub sample_bank: &'static str, // TODO: replace with enum
+    pub sample_bank: SampleBank,
     pub sample_volume: i32,
     pub custom_sample_bank: i32,
 }
 
 impl SamplePoint {
-    pub const DEFAULT_SAMPLE_BANK: &'static str = HitSampleInfo::BANK_NORMAL;
+    pub const DEFAULT_SAMPLE_BANK: SampleBank = SampleBank::Normal;
     pub const DEFAULT_SAMPLE_VOLUME: i32 = 100;
     pub const DEFAULT_CUSTOM_SAMPLE_BANK: i32 = 0;
 
     pub const fn new(
         time: f64,
-        sample_bank: &'static str,
+        sample_bank: SampleBank,
         sample_volume: i32,
         custom_sample_bank: i32,
     ) -> Self {

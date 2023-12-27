@@ -6,7 +6,7 @@ use crate::{
             TimingPoint,
         },
         format_version::{FormatVersion, ParseVersionError},
-        hit_samples::{HitSampleInfo, ParseSampleBankError, SampleBank},
+        hit_samples::{ParseSampleBankError, SampleBank},
         mode::{GameMode, ParseGameModeError},
     },
     reader::DecoderError,
@@ -165,7 +165,7 @@ impl DecodeBeatmap for TimingPoints {
             }
         }
 
-        let sample_set = split
+        let mut sample_set = split
             .next()
             .map(i32::parse)
             .transpose()?
@@ -194,11 +194,9 @@ impl DecodeBeatmap for TimingPoints {
             omit_first_bar_signature = effect_flags.has_flag(EffectFlags::OMIT_FIRST_BAR_LINE);
         }
 
-        let string_sample_set = if sample_set == SampleBank::None {
-            HitSampleInfo::BANK_NORMAL
-        } else {
-            sample_set.to_lowercase_str()
-        };
+        if sample_set == SampleBank::None {
+            sample_set = SampleBank::Normal;
+        }
 
         if (time - state.last_time).abs() < f64::EPSILON {
             if let Some(point) = state.pending_difficiulty_point.take() {
@@ -230,8 +228,7 @@ impl DecodeBeatmap for TimingPoints {
 
         state.timing_points.effect_points.push(effect_point);
 
-        let sample_point =
-            SamplePoint::new(time, string_sample_set, sample_volume, custom_sample_bank);
+        let sample_point = SamplePoint::new(time, sample_set, sample_volume, custom_sample_bank);
 
         state.timing_points.sample_points.push(sample_point);
 

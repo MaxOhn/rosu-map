@@ -151,13 +151,11 @@ impl From<&[HitSampleInfo]> for HitSoundType {
         let mut kind = Self::NONE;
 
         for sample in samples.iter() {
-            // false positive
-            #[allow(clippy::match_wildcard_for_single_variants)]
             match sample.name {
-                HitSampleInfoName::Name(HitSampleInfo::HIT_WHISTLE) => kind |= Self::WHISTLE,
-                HitSampleInfoName::Name(HitSampleInfo::HIT_FINISH) => kind |= Self::FINISH,
-                HitSampleInfoName::Name(HitSampleInfo::HIT_CLAP) => kind |= Self::CLAP,
-                _ => {}
+                Some(HitSampleInfoName::Whistle) => kind |= Self::WHISTLE,
+                Some(HitSampleInfoName::Finish) => kind |= Self::FINISH,
+                Some(HitSampleInfoName::Clap) => kind |= Self::CLAP,
+                Some(HitSampleInfoName::Normal) | None => {}
             }
         }
 
@@ -190,8 +188,8 @@ impl PartialEq<u8> for HitSoundType {
 #[derive(Clone, Default)]
 struct SampleBankInfo {
     filename: Option<String>,
-    bank_for_normal: Option<&'static str>,
-    bank_for_addition: Option<&'static str>,
+    bank_for_normal: Option<SampleBank>,
+    bank_for_addition: Option<SampleBank>,
     volume: i32,
     custom_sample_bank: i32,
 }
@@ -214,11 +212,11 @@ impl SampleBankInfo {
             .try_into()
             .unwrap_or(SampleBank::Normal);
 
-        let string_bank = (bank != SampleBank::None).then_some(bank.to_lowercase_str());
-        let string_add_bank = (bank != SampleBank::None).then_some(add_bank.to_lowercase_str());
+        let normal_bank = (bank != SampleBank::None).then_some(bank);
+        let add_bank = (add_bank != SampleBank::None).then_some(add_bank);
 
-        self.bank_for_normal = string_bank;
-        self.bank_for_addition = string_add_bank.or(string_bank);
+        self.bank_for_normal = normal_bank;
+        self.bank_for_addition = add_bank.or(normal_bank);
 
         if let Some(next) = split.next() {
             self.custom_sample_bank = next.parse_num()?;
@@ -652,15 +650,13 @@ fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Ve
     let mut sound_types = Vec::new();
 
     if bank_info.filename.as_ref().is_some_and(|s| !s.is_empty()) {
-        sound_types.push(HitSampleInfo::new(
-            bank_info.filename,
-            None,
-            1,
-            bank_info.volume,
-        ));
+        sound_types.push(HitSampleInfo {
+            filename: bank_info.filename,
+            ..HitSampleInfo::new(None, None, 1, bank_info.volume)
+        });
     } else {
         let mut sample = HitSampleInfo::new(
-            HitSampleInfo::HIT_NORMAL,
+            Some(HitSampleInfoName::Normal),
             bank_info.bank_for_normal,
             bank_info.custom_sample_bank,
             bank_info.volume,
@@ -674,7 +670,7 @@ fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Ve
 
     if sound_type.has_flag(HitSoundType::FINISH) {
         sound_types.push(HitSampleInfo::new(
-            HitSampleInfo::HIT_FINISH,
+            Some(HitSampleInfoName::Finish),
             bank_info.bank_for_addition,
             bank_info.custom_sample_bank,
             bank_info.volume,
@@ -683,7 +679,7 @@ fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Ve
 
     if sound_type.has_flag(HitSoundType::WHISTLE) {
         sound_types.push(HitSampleInfo::new(
-            HitSampleInfo::HIT_WHISTLE,
+            Some(HitSampleInfoName::Whistle),
             bank_info.bank_for_addition,
             bank_info.custom_sample_bank,
             bank_info.volume,
@@ -692,7 +688,7 @@ fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Ve
 
     if sound_type.has_flag(HitSoundType::CLAP) {
         sound_types.push(HitSampleInfo::new(
-            HitSampleInfo::HIT_CLAP,
+            Some(HitSampleInfoName::Clap),
             bank_info.bank_for_addition,
             bank_info.custom_sample_bank,
             bank_info.volume,

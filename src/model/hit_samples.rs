@@ -1,54 +1,61 @@
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    str::FromStr,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HitSampleInfo {
-    pub name: HitSampleInfoName,
-    pub bank: &'static str,
-    pub suffix: Option<String>,
+    pub name: Option<HitSampleInfoName>,
+    pub filename: Option<String>,
+    pub bank: SampleBank,
+    pub suffix: Option<i32>,
     pub volume: i32,
     pub custom_sample_bank: i32,
     pub bank_specified: bool,
     pub is_layered: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum HitSampleInfoName {
-    Name(&'static str),
-    File(Option<String>),
+    Normal,
+    Whistle,
+    Finish,
+    Clap,
 }
 
-impl From<&'static str> for HitSampleInfoName {
-    fn from(name: &'static str) -> Self {
-        Self::Name(name)
+impl HitSampleInfoName {
+    pub const fn to_lowercase_str(self) -> &'static str {
+        match self {
+            HitSampleInfoName::Normal => "hitnormal",
+            HitSampleInfoName::Whistle => "hitwhistle",
+            HitSampleInfoName::Finish => "hitfinish",
+            HitSampleInfoName::Clap => "hitclap",
+        }
     }
 }
 
-impl From<Option<String>> for HitSampleInfoName {
-    fn from(filename: Option<String>) -> Self {
-        Self::File(filename)
+impl Display for HitSampleInfoName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(self.to_lowercase_str())
     }
 }
 
 impl HitSampleInfo {
-    pub const HIT_NORMAL: &'static str = "hitnormal";
-    pub const HIT_WHISTLE: &'static str = "hitwhistle";
-    pub const HIT_FINISH: &'static str = "hitfinish";
-    pub const HIT_CLAP: &'static str = "hitclap";
-
-    pub const BANK_NORMAL: &'static str = "normal";
-    pub const BANK_SOFT: &'static str = "soft";
-    pub const BANK_DRUM: &'static str = "drum";
+    pub const BANK_NORMAL: SampleBank = SampleBank::Normal;
+    pub const BANK_SOFT: SampleBank = SampleBank::Soft;
+    pub const BANK_DRUM: SampleBank = SampleBank::Drum;
 
     pub fn new(
-        name: impl Into<HitSampleInfoName>,
-        bank: Option<&'static str>,
+        name: Option<HitSampleInfoName>,
+        bank: Option<SampleBank>,
         custom_sample_bank: i32,
         volume: i32,
     ) -> Self {
         Self {
-            name: name.into(),
+            name,
+            filename: None,
             bank: bank.unwrap_or(Self::BANK_NORMAL),
-            suffix: (custom_sample_bank >= 2).then(|| custom_sample_bank.to_string()),
+            suffix: (custom_sample_bank >= 2).then_some(custom_sample_bank),
             volume,
             custom_sample_bank,
             bank_specified: bank.is_some(),
@@ -56,17 +63,14 @@ impl HitSampleInfo {
         }
     }
 
-    pub fn lookup_name(&self) -> String {
-        let name = match self.name {
-            HitSampleInfoName::Name(name) => name,
-            HitSampleInfoName::File(_) => "",
-        };
-
-        if let Some(suffix) = self.suffix.as_ref().filter(|suffix| !suffix.is_empty()) {
-            format!("Gameplay/{}-{name}{suffix}", self.bank)
-        } else {
-            format!("Gameplay/{}-{name}", self.bank)
-        }
+    pub fn lookup_name(&self) -> Option<String> {
+        self.name.map(|name| {
+            if let Some(ref suffix) = self.suffix {
+                format!("Gameplay/{}-{name}{suffix}", self.bank)
+            } else {
+                format!("Gameplay/{}-{name}", self.bank)
+            }
+        })
     }
 }
 
@@ -77,6 +81,12 @@ pub enum SampleBank {
     Normal,
     Soft,
     Drum,
+}
+
+impl Display for SampleBank {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(self.to_lowercase_str())
+    }
 }
 
 impl SampleBank {

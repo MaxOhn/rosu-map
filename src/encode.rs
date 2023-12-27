@@ -13,7 +13,7 @@ use crate::{
             slider::{HitObjectSlider, PathType, SplineType},
             HitObjectKind,
         },
-        hit_samples::{HitSampleInfo, HitSampleInfoName, SampleBank},
+        hit_samples::{HitSampleInfo, HitSampleInfoName},
         mode::GameMode,
     },
     section::{
@@ -165,13 +165,6 @@ impl Beatmap {
             .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample_point| {
                 sample_point.sample_bank
             });
-
-        let sample_set = match sample_set {
-            HitSampleInfo::BANK_NORMAL => SampleBank::Normal,
-            HitSampleInfo::BANK_SOFT => SampleBank::Soft,
-            HitSampleInfo::BANK_DRUM => SampleBank::Drum,
-            _ => SampleBank::None,
-        };
 
         writeln!(
             writer,
@@ -428,7 +421,7 @@ impl Beatmap {
                 ControlPoint::Difficulty(_) | ControlPoint::None => 0,
             };
 
-            let sample_set = SampleBank::from_lowercase(group.sample.sample_bank) as i32;
+            let sample_set = group.sample.sample_bank as i32;
             let sample_idx = group.sample.custom_sample_bank;
             let volume = group.sample.sample_volume;
 
@@ -662,27 +655,13 @@ fn get_sample_bank<W: Write>(
     // we'll just take the first and assume it's the only one.
     let normal_bank = samples
         .iter()
-        .find(|sample| {
-            matches!(
-                sample.name,
-                HitSampleInfoName::Name(HitSampleInfo::HIT_NORMAL)
-            )
-        })
+        .find(|sample| matches!(sample.name, Some(HitSampleInfoName::Normal)))
         .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| sample.bank);
-
-    let normal_bank = SampleBank::from_lowercase(normal_bank);
 
     let add_bank = samples
         .iter()
-        .find(|sample| match sample.name {
-            // an empty name implies a filename which we handle through an enum variant so we
-            // don't need to check for it anymore
-            HitSampleInfoName::Name(n) => n != HitSampleInfo::HIT_NORMAL,
-            HitSampleInfoName::File(_) => false,
-        })
+        .find(|sample| !matches!(sample.name, Some(HitSampleInfoName::Normal) | None))
         .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| sample.bank);
-
-    let add_bank = SampleBank::from_lowercase(add_bank);
 
     write!(writer, "{}:{}", normal_bank as i32, add_bank as i32)?;
 
@@ -692,13 +671,12 @@ fn get_sample_bank<W: Write>(
 
     let mut custom_sample_bank = samples
         .iter()
-        .find(|sample| matches!(sample.name, HitSampleInfoName::Name(_)))
+        .find(|sample| sample.name.is_some())
         .map_or(0, |sample| sample.custom_sample_bank);
 
     let sample_filename = samples
         .iter()
-        .find(|sample| matches!(sample.name, HitSampleInfoName::Name(_)))
-        .map(HitSampleInfo::lookup_name)
+        .find_map(HitSampleInfo::lookup_name)
         .unwrap_or_default();
 
     let mut volume = samples.first().map_or(100, |sample| sample.volume);
