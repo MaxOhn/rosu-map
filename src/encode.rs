@@ -1,4 +1,8 @@
-use std::io::{Result as IoResult, Write};
+use std::{
+    fs::File,
+    io::{BufWriter, Error as IoError, ErrorKind, Result as IoResult, Write},
+    path::Path,
+};
 
 use crate::{
     model::{
@@ -24,12 +28,89 @@ use crate::{
 };
 
 impl Beatmap {
+    /// Encode a [`Beatmap`] into content of a `.osu` file and store it at the
+    /// given path.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use rosu_map::Beatmap;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let map: Beatmap = ...
+    /// # Beatmap::default();
+    /// let path = "./maps/123456.osu";
+    /// map.encode_to_path(path)?;
+    /// # Ok(()) }
+    /// ```
+    pub fn encode_to_path<P: AsRef<Path>>(&self, path: P) -> IoResult<()> {
+        let file = File::create(path)?;
+        let writer = BufWriter::new(file);
+
+        self.encode(writer)
+    }
+
+    /// Encode a [`Beatmap`] into content of a `.osu` file and store it into a
+    /// [`String`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use rosu_map::Beatmap;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let map: Beatmap =  ...
+    /// # Beatmap::default();
+    /// let content: String = map.encode_to_string()?;
+    /// # Ok(()) }
+    /// ```
+    pub fn encode_to_string(&self) -> IoResult<String> {
+        let mut writer = Vec::with_capacity(4096);
+        self.encode(&mut writer)?;
+
+        String::from_utf8(writer).map_err(|e| IoError::new(ErrorKind::Other, e))
+    }
+
     /// Encode a [`Beatmap`] into content of a `.osu` file.
     ///
-    /// In case of writing directly to a file, it is recommended to pass the
-    /// file wrapped in a [`BufWriter`].
+    /// # Example
     ///
-    /// [`BufWriter`]: std::io::BufWriter
+    /// In case of writing directly to a file, it is recommended to pass the
+    /// file wrapped in a [`BufWriter`] or just use
+    /// [`encode_to_path`].
+    ///
+    /// ```no_run
+    /// use std::{fs::File, io::BufWriter};
+    /// # use rosu_map::Beatmap;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let map: Beatmap = ...
+    /// # Beatmap::default();
+    /// let path = "./maps/123456.osu";
+    /// let file = File::create(path)?;
+    /// let writer = BufWriter::new(file);
+    ///
+    /// map.encode(writer)?;
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// Encoding into a [`Vec<u8>`] can be done by passing a mutable reference.
+    ///
+    /// ```
+    /// # use rosu_map::Beatmap;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let map: Beatmap = ...
+    /// # Beatmap::default();
+    /// let mut bytes: Vec<u8> = Vec::with_capacity(2048);
+    ///
+    /// map.encode(&mut bytes)?;
+    ///
+    /// // Or just use `Beatmap::encode_to_string`
+    /// let content = String::from_utf8(bytes)?;
+    ///
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// [`encode_to_path`]: Beatmap::encode_to_path
     pub fn encode<W: Write>(&self, mut writer: W) -> IoResult<()> {
         writeln!(writer, "osu file format v{}", self.format_version.0)?;
 
