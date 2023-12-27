@@ -50,8 +50,9 @@ pub enum ParseTimingPointsError {
 pub(crate) struct EffectFlags(i32);
 
 impl EffectFlags {
-    const KIAI: i32 = 1 << 0;
-    const OMIT_FIRST_BAR_SIGNATURE: i32 = 1 << 3;
+    pub(crate) const NONE: i32 = 0;
+    pub(crate) const KIAI: i32 = 1 << 0;
+    pub(crate) const OMIT_FIRST_BAR_LINE: i32 = 1 << 3;
 
     const fn has_flag(self, flag: i32) -> bool {
         (self.0 & flag) != 0
@@ -190,7 +191,7 @@ impl ParseBeatmap for TimingPoints {
         if let Some(next) = split.next() {
             let effect_flags = EffectFlags(i32::parse(next)?);
             kiai_mode = effect_flags.has_flag(EffectFlags::KIAI);
-            omit_first_bar_signature = effect_flags.has_flag(EffectFlags::OMIT_FIRST_BAR_SIGNATURE);
+            omit_first_bar_signature = effect_flags.has_flag(EffectFlags::OMIT_FIRST_BAR_LINE);
         }
 
         let string_sample_set = if sample_set == SampleBank::None {

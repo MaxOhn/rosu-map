@@ -5,15 +5,15 @@ pub trait StrExt {
     /// Trim trailing comments and whitespace.
     fn trim_comment(&self) -> &str;
 
-    /// Parse `&str`to a number without exceeding [`MAX_PARSE_VALUE`].
+    /// Parse `&str` to a number without exceeding [`MAX_PARSE_VALUE`].
     ///
     /// [`MAX_PARSE_VALUE`]: crate::util::MAX_PARSE_VALUE
     fn parse_num<N: ParseNumber>(&self) -> Result<N, ParseNumberError>;
 
-    /// Parse `&str`to a number without exceeding the given limit.
+    /// Parse `&str` to a number without exceeding the given limit.
     fn parse_with_limits<N: ParseNumber>(&self, limit: N) -> Result<N, ParseNumberError>;
 
-    /// Replace windows path separaters with unix ones.
+    /// Replace windows path separators with unix ones.
     fn to_standardized_path(&self) -> String;
 
     /// Fix path and quotation segments to normalize filenames.
@@ -38,8 +38,8 @@ impl StrExt for str {
     }
 
     fn clean_filename(&self) -> String {
-        self.replace("\\\\", "\\")
-            .trim_matches('"')
+        self.trim_matches('"')
+            .replace("\\\\", "\\")
             .to_standardized_path()
     }
 }

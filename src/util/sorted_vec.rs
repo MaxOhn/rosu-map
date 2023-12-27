@@ -3,6 +3,7 @@ use std::{
     fmt::{Debug, Formatter, Result as FmtResult},
     ops::{Deref, Index},
     slice::SliceIndex,
+    vec::IntoIter,
 };
 
 /// A [`Vec`] whose elements are guaranteed to be unique and in order.
@@ -154,6 +155,15 @@ pub trait Sortable: Sized {
 impl<T: Ord> Sortable for T {
     fn cmp(&self, other: &Self) -> Ordering {
         <Self as Ord>::cmp(self, other)
+    }
+}
+
+impl<T> IntoIterator for SortedVec<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
     }
 }
 

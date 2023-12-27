@@ -8,7 +8,7 @@ pub trait ParseNumber: Sized {
     /// Parses a number without exceeding [`MAX_PARSE_VALUE`].
     fn parse(s: &str) -> Result<Self, ParseNumberError>;
 
-    /// Parses a number without exceeding the given limit..
+    /// Parses a number without exceeding the given limit.
     fn parse_with_limits(s: &str, limit: Self) -> Result<Self, ParseNumberError>;
 }
 
