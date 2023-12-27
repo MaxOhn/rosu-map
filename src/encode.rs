@@ -36,7 +36,7 @@ impl Beatmap {
     /// ```no_run
     /// # use rosu_map::Beatmap;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = ...
+    /// let map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let path = "./maps/123456.osu";
     /// map.encode_to_path(path)?;
@@ -57,7 +57,7 @@ impl Beatmap {
     /// ```
     /// # use rosu_map::Beatmap;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap =  ...
+    /// let map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let content: String = map.encode_to_string()?;
     /// # Ok(()) }
@@ -82,7 +82,7 @@ impl Beatmap {
     /// # use rosu_map::Beatmap;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = ...
+    /// let map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let path = "./maps/123456.osu";
     /// let file = File::create(path)?;
@@ -98,7 +98,7 @@ impl Beatmap {
     /// # use rosu_map::Beatmap;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = ...
+    /// let map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let mut bytes: Vec<u8> = Vec::with_capacity(2048);
     ///
