@@ -99,7 +99,7 @@ impl DecodeBeatmap for TimingPoints {
     type State = TimingPointsState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
             return Ok(());
         };
 
