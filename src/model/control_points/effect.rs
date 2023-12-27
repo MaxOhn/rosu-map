@@ -34,12 +34,12 @@ impl Default for EffectPoint {
 
 impl PartialOrd for EffectPoint {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.time.partial_cmp(&other.time)
+        Some(<Self as Sortable>::cmp(self, other))
     }
 }
 
 impl Sortable for EffectPoint {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+        self.time.total_cmp(&other.time)
     }
 }
