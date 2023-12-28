@@ -8,13 +8,13 @@ use crate::{
     {FormatVersion, ParseVersionError},
 };
 
-use super::{Color, CustomColor, CustomColors};
+use super::{Color, CustomColor};
 
 /// Struct containing all data from a `.osu` file's `[Colours]` section.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Colors {
     pub custom_combo_colors: Vec<Color>,
-    pub custom_colors: CustomColors,
+    pub custom_colors: Vec<CustomColor>,
 }
 
 /// All valid keys within a `.osu` file's `[Colours]` section
@@ -113,7 +113,12 @@ impl DecodeBeatmap for Colors {
 
         match key {
             ColorsKey::Combo => state.custom_combo_colors.push(color),
-            ColorsKey::Name(name) => state.custom_colors.insert(CustomColor { name, color }),
+            ColorsKey::Name(name) => {
+                match state.custom_colors.iter_mut().find(|c| c.name == name) {
+                    Some(old) => old.color = color,
+                    None => state.custom_colors.push(CustomColor { name, color }),
+                }
+            }
         }
 
         Ok(())

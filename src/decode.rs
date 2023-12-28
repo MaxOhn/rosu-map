@@ -60,7 +60,9 @@ pub trait DecodeState: Sized {
 ///
 /// ```
 /// use rosu_map::{DecodeBeatmap, DecodeState, FormatVersion};
-/// use rosu_map::section::hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError};
+/// use rosu_map::section::hit_objects::{
+///     HitObject, HitObjects, HitObjectsState, ParseHitObjectsError,
+/// };
 /// use rosu_map::section::metadata::MetadataKey;
 /// use rosu_map::util::KeyValue;
 ///

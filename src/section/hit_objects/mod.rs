@@ -11,20 +11,25 @@ pub use self::{
     hold::HitObjectHold,
     slider::{
         curve::{BorrowedCurve, Curve, CurveBuffers},
-        path::SliderPath,
+        path::{PathControlPoint, SliderPath},
         path_type::{PathType, SplineType},
-        HitObjectSlider, PathControlPoint,
+        HitObjectSlider,
     },
     spinner::HitObjectSpinner,
 };
 
 mod circle;
 mod decode;
-pub mod hit_samples;
 mod hold;
 mod slider;
 mod spinner;
 
+/// Audio-related types.
+pub mod hit_samples;
+
+/// A hit object of a [`Beatmap`].
+///
+/// [`Beatmap`]: crate::beatmap::Beatmap
 #[derive(Clone, Debug, PartialEq)]
 pub struct HitObject {
     pub start_time: f64,
@@ -32,6 +37,7 @@ pub struct HitObject {
     pub samples: Vec<HitSampleInfo>,
 }
 
+/// Additional data for a [`HitObject`] depending on its type.
 #[derive(Clone, Debug, PartialEq)]
 pub enum HitObjectKind {
     Circle(HitObjectCircle),
@@ -40,7 +46,7 @@ pub enum HitObjectKind {
     Hold(HitObjectHold),
 }
 
-/// The type of a hit object.
+/// The type of a [`HitObject`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct HitObjectType(i32);
 
@@ -52,6 +58,7 @@ impl HitObjectType {
     pub const COMBO_OFFSET: i32 = (1 << 4) | (1 << 5) | (1 << 6);
     pub const HOLD: i32 = 1 << 7;
 
+    /// Check whether any of the given bitflags are set.
     pub const fn has_flag(self, flag: i32) -> bool {
         (self.0 & flag) != 0
     }

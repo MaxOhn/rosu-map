@@ -1,6 +1,6 @@
 use crate::util::Pos;
 
-use self::{path::SliderPath, path_type::PathType};
+use self::path::{PathControlPoint, SliderPath};
 
 use super::hit_samples::HitSampleInfo;
 
@@ -8,6 +8,9 @@ pub mod curve;
 pub mod path;
 pub mod path_type;
 
+/// A slider [`HitObject`].
+///
+/// [`HitObject`]: crate::section::hit_objects::HitObject
 #[derive(Clone, Debug, PartialEq)]
 pub struct HitObjectSlider {
     pub pos: Pos,
@@ -21,20 +24,5 @@ pub struct HitObjectSlider {
 impl HitObjectSlider {
     pub const fn span_count(&self) -> i32 {
         self.repeat_count + 1
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub struct PathControlPoint {
-    pub pos: Pos,
-    pub path_type: Option<PathType>,
-}
-
-impl PathControlPoint {
-    pub const fn new(pos: Pos) -> Self {
-        Self {
-            pos,
-            path_type: None,
-        }
     }
 }

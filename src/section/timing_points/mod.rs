@@ -21,6 +21,7 @@ impl EffectFlags {
     pub const KIAI: u8 = 1 << 0;
     pub const OMIT_FIRST_BAR_LINE: u8 = 1 << 3;
 
+    /// Check whether any of the given bitflags are set.
     pub const fn has_flag(self, flag: u8) -> bool {
         (self.0 & flag) != 0
     }

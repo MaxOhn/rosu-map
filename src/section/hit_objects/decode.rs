@@ -10,9 +10,8 @@ use crate::{
 
 use super::{
     hit_samples::{HitSoundType, ParseHitSoundTypeError, ParseSampleBankInfoError, SampleBankInfo},
-    slider::path::SliderPath,
     HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSlider, HitObjectSpinner,
-    HitObjectType, ParseHitObjectTypeError, PathControlPoint,
+    HitObjectType, ParseHitObjectTypeError, PathControlPoint, SliderPath,
 };
 
 /// Struct containing all data from a `.osu` file's `[HitObjects]` section.

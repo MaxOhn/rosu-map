@@ -1,8 +1,13 @@
+use crate::util::Pos;
+
 use super::{
     curve::{BorrowedCurve, Curve, CurveBuffers},
-    PathControlPoint,
+    path_type::PathType,
 };
 
+/// The path of a [`HitObjectSlider`].
+///
+/// [`HitObjectSlider`]: crate::section::hit_objects::HitObjectSlider
 #[derive(Clone, Debug, PartialEq)]
 pub struct SliderPath {
     control_points: Vec<PathControlPoint>,
@@ -114,6 +119,23 @@ impl SliderPath {
 
     fn calculate_curve_with_bufs(&self, bufs: &mut CurveBuffers) -> Curve {
         Curve::new(&self.control_points, self.expected_dist, bufs)
+    }
+}
+
+/// A positional control point of a [`SliderPath`].
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub struct PathControlPoint {
+    pub pos: Pos,
+    pub path_type: Option<PathType>,
+}
+
+impl PathControlPoint {
+    /// Initialize a new [`PathControlPoint`].
+    pub const fn new(pos: Pos) -> Self {
+        Self {
+            pos,
+            path_type: None,
+        }
     }
 }
 

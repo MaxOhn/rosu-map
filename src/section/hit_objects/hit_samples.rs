@@ -8,6 +8,9 @@ use std::{
 
 use crate::util::{ParseNumber, ParseNumberError, StrExt};
 
+/// Info about a [`HitObject`]'s sample.
+/// 
+/// [`HitObject`]: crate::section::hit_objects::HitObject
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HitSampleInfo {
     pub name: Option<HitSampleInfoName>,
@@ -20,6 +23,7 @@ pub struct HitSampleInfo {
     pub is_layered: bool,
 }
 
+/// The name of a [`HitSampleInfo`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum HitSampleInfoName {
     Normal,
@@ -46,10 +50,7 @@ impl Display for HitSampleInfoName {
 }
 
 impl HitSampleInfo {
-    pub const BANK_NORMAL: SampleBank = SampleBank::Normal;
-    pub const BANK_SOFT: SampleBank = SampleBank::Soft;
-    pub const BANK_DRUM: SampleBank = SampleBank::Drum;
-
+    /// Initialize a new [`HitSampleInfo`] without a filename.
     pub fn new(
         name: Option<HitSampleInfoName>,
         bank: Option<SampleBank>,
@@ -59,7 +60,7 @@ impl HitSampleInfo {
         Self {
             name,
             filename: None,
-            bank: bank.unwrap_or(Self::BANK_NORMAL),
+            bank: bank.unwrap_or(SampleBank::Normal),
             suffix: (custom_sample_bank >= 2)
                 .then(|| 
                     // SAFETY: The value is guaranteed to be >= 2
@@ -83,6 +84,7 @@ impl HitSampleInfo {
     }
 }
 
+/// The different types of samples.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum SampleBank {
     #[default]
@@ -162,6 +164,7 @@ impl HitSoundType {
     pub const FINISH: u8 = 4;
     pub const CLAP: u8 = 5;
 
+    /// Check whether any of the given bitflags are set.
     pub const fn has_flag(self, flag: u8) -> bool {
         (self.0 & flag) != 0
     }
@@ -187,6 +190,12 @@ impl From<&[HitSampleInfo]> for HitSoundType {
 impl From<HitSoundType> for u8 {
     fn from(kind: HitSoundType) -> Self {
         kind.0
+    }
+}
+
+impl From<u8> for HitSoundType {
+    fn from(hit_sound_type: u8) -> Self {
+        Self(hit_sound_type)
     }
 }
 

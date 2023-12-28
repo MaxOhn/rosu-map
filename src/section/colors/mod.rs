@@ -1,6 +1,5 @@
 use std::{
-    borrow::Borrow,
-    ops::{Deref, DerefMut, Index, IndexMut},
+    ops::{Index, IndexMut},
     str::FromStr,
 };
 
@@ -8,26 +7,32 @@ pub use self::decode::{Colors, ColorsKey, ColorsState, ParseColorsError};
 
 mod decode;
 
+/// Basic RGBA color.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Color([u8; 4]);
 
 impl Color {
+    /// Initialize a new color.
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self([r, g, b, a])
     }
 
+    /// Get the red value.
     pub fn red(self) -> u8 {
         self[0]
     }
 
+    /// Get the green value.
     pub fn green(self) -> u8 {
         self[1]
     }
 
+    /// Get the blue value.
     pub fn blue(self) -> u8 {
         self[2]
     }
 
+    /// Get the alpha value.
     pub fn alpha(self) -> u8 {
         self[3]
     }
@@ -68,48 +73,9 @@ impl FromStr for Color {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-// Likely small enough so a Vec should be faster than a HashMap
-pub struct CustomColors(Vec<CustomColor>);
-
+/// A combination of a [`Color`] and a name.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CustomColor {
     pub name: String,
     pub color: Color,
-}
-
-impl CustomColors {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn get<Q>(&self, name: &Q) -> Option<Color>
-    where
-        String: Borrow<Q>,
-        Q: Eq,
-    {
-        self.iter()
-            .find_map(|color| (color.name.borrow() == name).then_some(color.color))
-    }
-
-    pub fn insert(&mut self, color: CustomColor) {
-        match self.iter_mut().find(|item| item.name == color.name) {
-            Some(old) => *old = color,
-            None => self.push(color),
-        }
-    }
-}
-
-impl Deref for CustomColors {
-    type Target = Vec<CustomColor>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for CustomColors {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
 }

@@ -90,7 +90,6 @@ impl Beatmap {
     ///
     /// ```
     /// # use rosu_map::Beatmap;
-    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let map: Beatmap = /* ... */
     /// # Beatmap::default();

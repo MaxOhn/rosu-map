@@ -9,7 +9,7 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     reader::DecoderError,
     section::{
-        colors::{Color, Colors, ColorsState, CustomColors, ParseColorsError},
+        colors::{Color, Colors, ColorsState, CustomColor, ParseColorsError},
         difficulty::{Difficulty, DifficultyState, ParseDifficultyError},
         editor::{Editor, EditorState, ParseEditorError},
         events::{BreakPeriod, Events, EventsState, ParseEventsError},
@@ -83,7 +83,7 @@ pub struct Beatmap {
 
     // Colors
     pub custom_combo_colors: Vec<Color>,
-    pub custom_colors: CustomColors,
+    pub custom_colors: Vec<CustomColor>,
 
     // HitObjects
     pub hit_objects: Vec<HitObject>,

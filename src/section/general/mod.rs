@@ -47,6 +47,9 @@ impl From<u8> for GameMode {
     }
 }
 
+/// The countdown type of a [`Beatmap`].
+///
+/// [`Beatmap`]: crate::beatmap::Beatmap
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum CountdownType {
     #[default]
@@ -70,6 +73,7 @@ impl FromStr for CountdownType {
     }
 }
 
+/// Error type for a failed parsing of [`CountdownType`].
 #[derive(Debug, thiserror::Error)]
 #[error("invalid countdown type")]
 pub struct ParseCountdownTypeError;

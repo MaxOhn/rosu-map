@@ -25,7 +25,7 @@ mod reader;
 /// Fully parsed content of a `.osu` file.
 pub mod beatmap;
 
-/// Section-specify types.
+/// Section-specific types.
 pub mod section;
 
 /// Various utility types for usage in and around this library.
