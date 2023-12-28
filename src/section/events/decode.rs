@@ -1,12 +1,11 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::{
-        events::{BreakPeriod, EventType, ParseEventTypeError},
-        format_version::{FormatVersion, ParseVersionError},
-    },
     reader::DecoderError,
     util::{ParseNumber, ParseNumberError, StrExt},
+    {FormatVersion, ParseVersionError},
 };
+
+use super::{BreakPeriod, EventType, ParseEventTypeError};
 
 /// Struct containing all data from a `.osu` file's `[Events]` section.
 #[derive(Clone, Debug, Default, PartialEq)]

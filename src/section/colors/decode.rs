@@ -2,15 +2,13 @@ use std::{num::ParseIntError, str::FromStr};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::{
-        colors::{Color, CustomColor, CustomColors},
-        format_version::{FormatVersion, ParseVersionError},
-    },
     reader::DecoderError,
+    section::UnknownKeyError,
     util::{KeyValue, ParseNumberError, StrExt},
+    {FormatVersion, ParseVersionError},
 };
 
-use super::UnknownKeyError;
+use super::{Color, CustomColor, CustomColors};
 
 /// Struct containing all data from a `.osu` file's `[Colours]` section.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

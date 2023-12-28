@@ -7,27 +7,22 @@ use std::{
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::{
-        colors::{Color, CustomColors},
-        control_points::{DifficultyPoint, EffectPoint, SamplePoint, TimingPoint},
-        countdown::CountdownType,
-        events::BreakPeriod,
-        format_version::{FormatVersion, ParseVersionError},
-        hit_objects::HitObject,
-        mode::GameMode,
-    },
     reader::DecoderError,
     section::{
-        colors::{Colors, ColorsState, ParseColorsError},
+        colors::{Color, Colors, ColorsState, CustomColors, ParseColorsError},
         difficulty::{Difficulty, DifficultyState, ParseDifficultyError},
         editor::{Editor, EditorState, ParseEditorError},
-        events::{Events, EventsState, ParseEventsError},
-        general::{General, GeneralState, ParseGeneralError},
-        hit_objects::{HitObjects, HitObjectsState, ParseHitObjectsError},
+        events::{BreakPeriod, Events, EventsState, ParseEventsError},
+        general::{CountdownType, GameMode, General, GeneralState, ParseGeneralError},
+        hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError},
         metadata::{Metadata, MetadataState, ParseMetadataError},
-        timing_points::{ParseTimingPointsError, TimingPoints, TimingPointsState},
+        timing_points::{
+            DifficultyPoint, EffectPoint, ParseTimingPointsError, SamplePoint, TimingPoint,
+            TimingPoints, TimingPointsState,
+        },
     },
     util::SortedVec,
+    FormatVersion, ParseVersionError,
 };
 
 /// Fully parsed content of a `.osu` file.

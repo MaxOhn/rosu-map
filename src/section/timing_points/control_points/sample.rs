@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{model::hit_samples::SampleBank, util::Sortable};
+use crate::{section::hit_objects::hit_samples::SampleBank, util::Sortable};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SamplePoint {

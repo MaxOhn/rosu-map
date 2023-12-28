@@ -19,18 +19,20 @@ mod macros;
 
 mod decode;
 mod encode;
+mod format_version;
 mod reader;
 
-/// All parsed types contained in a `.osu` file.
-pub mod model;
+/// Fully parsed content of a `.osu` file.
+pub mod beatmap;
 
-/// Decode-related types for all sections.
+/// Section-specify types.
 pub mod section;
 
 /// Various utility types for usage in and around this library.
 pub mod util;
 
 pub use crate::{
+    beatmap::Beatmap,
     decode::{DecodeBeatmap, DecodeState, DecoderError},
-    model::beatmap::Beatmap,
+    format_version::{FormatVersion, ParseVersionError},
 };

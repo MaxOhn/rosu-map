@@ -1,25 +1,25 @@
-/// Decode-related types for the `[General]` section.
+/// Types for the `[General]` section.
 pub mod general;
 
-/// Decode-related types for the `[Editor]` section.
+/// Types for the `[Editor]` section.
 pub mod editor;
 
-/// Decode-related types for the `[Difficulty]` section.
+/// Types for the `[Difficulty]` section.
 pub mod difficulty;
 
-/// Decode-related types for the `[Metadata]` section.
+/// Types for the `[Metadata]` section.
 pub mod metadata;
 
-/// Decode-related types for the `[Events]` section.
+/// Types for the `[Events]` section.
 pub mod events;
 
-/// Decode-related types for the `[TimingPoints]` section.
+/// Types for the `[TimingPoints]` section.
 pub mod timing_points;
 
-/// Decode-related types for the `[Colours]` section.
+/// Types for the `[Colours]` section.
 pub mod colors;
 
-/// Decode-related types for the `[HitObjects]` section.
+/// Types for the `[HitObjects]` section.
 pub mod hit_objects;
 
 /// All sections in a `.osu` file.

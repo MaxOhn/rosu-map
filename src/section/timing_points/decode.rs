@@ -1,19 +1,18 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::{
-        control_points::{
-            DifficultyPoint, EffectFlags, EffectPoint, ParseEffectFlagsError, SamplePoint,
-            TimeSignature, TimeSignatureError, TimingPoint,
-        },
-        format_version::{FormatVersion, ParseVersionError},
-        hit_samples::{ParseSampleBankError, SampleBank},
-        mode::{GameMode, ParseGameModeError},
-    },
     reader::DecoderError,
+    section::{
+        general::{GameMode, GeneralKey, ParseGameModeError},
+        hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
+    },
     util::{KeyValue, ParseNumber, ParseNumberError, SortedVec, StrExt, MAX_PARSE_VALUE},
+    {FormatVersion, ParseVersionError},
 };
 
-use super::general::GeneralKey;
+use super::{
+    DifficultyPoint, EffectFlags, EffectPoint, ParseEffectFlagsError, SamplePoint, TimeSignature,
+    TimeSignatureError, TimingPoint,
+};
 
 /// Struct containing all data from a `.osu` file's `[TimingPoints]` section.
 #[derive(Default)]

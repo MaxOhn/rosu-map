@@ -1,9 +1,9 @@
 use std::{error::Error, io::BufRead, ops::ControlFlow};
 
 use crate::{
-    model::format_version::{FormatVersion, ParseVersionError},
     reader::Reader,
     section::Section,
+    {FormatVersion, ParseVersionError},
 };
 
 pub use crate::reader::DecoderError;
@@ -19,10 +19,11 @@ pub trait DecodeState: Sized {
 
 /// Trait to handle reading and parsing of `.osu` files.
 ///
-/// Generally, the only way to use this trait is to call the [`decode`] method.
+/// Generally, the only way to interact with this trait should be calling the
+/// [`decode`] method.
 ///
 /// Each section has its own `parse_[section]` method in which, given the next
-/// line, the state can be updated.
+/// line, the state should be updated.
 ///
 /// # Example
 ///
@@ -32,7 +33,7 @@ pub trait DecodeState: Sized {
 /// ```
 /// use std::io::Cursor;
 /// use rosu_map::{Beatmap, DecodeBeatmap};
-/// use rosu_map::model::mode::GameMode;
+/// use rosu_map::section::general::GameMode;
 /// use rosu_map::section::hit_objects::HitObjects;
 ///
 /// let content = "osu file format v14
@@ -50,6 +51,7 @@ pub trait DecodeState: Sized {
 /// let mut reader = Cursor::new(content);
 /// let decoded = Beatmap::decode(&mut reader).unwrap();
 /// assert_eq!(decoded.mode, GameMode::Taiko);
+/// assert_eq!(decoded.title, "Some song title");
 /// ```
 ///
 /// Let's assume only the beatmap title and hitobjects are of interest. Using
@@ -57,9 +59,8 @@ pub trait DecodeState: Sized {
 /// implementing this trait on a custom type:
 ///
 /// ```
-/// use rosu_map::{DecodeBeatmap, DecodeState};
-/// use rosu_map::model::{format_version::FormatVersion, hit_objects::HitObject};
-/// use rosu_map::section::hit_objects::{HitObjects, HitObjectsState, ParseHitObjectsError};
+/// use rosu_map::{DecodeBeatmap, DecodeState, FormatVersion};
+/// use rosu_map::section::hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError};
 /// use rosu_map::section::metadata::MetadataKey;
 /// use rosu_map::util::KeyValue;
 ///
@@ -104,6 +105,9 @@ pub trait DecodeState: Sized {
 ///     type Error = ParseHitObjectsError;
 ///
 ///     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+///         // Note that comments are *not* trimmed at this point.
+///         // To do that, one can use the `rosu_map::util::StrExt` trait and
+///         // its `trim_comment` method.
 ///         let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
 ///             return Ok(());
 ///         };
@@ -150,7 +154,7 @@ pub trait DecodeState: Sized {
 /// [`Beatmap`] implement the [`DecodeBeatmap`] trait.
 ///
 /// [`decode`]: DecodeBeatmap::decode
-/// [`Beatmap`]: crate::model::beatmap::Beatmap
+/// [`Beatmap`]: crate::beatmap::Beatmap
 /// [`HitObjects`]: crate::section::hit_objects::HitObjects
 /// [`TimingPoints`]: crate::section::timing_points::TimingPoints
 pub trait DecodeBeatmap: Sized {

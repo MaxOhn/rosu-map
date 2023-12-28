@@ -4,15 +4,25 @@ use std::{
     str::FromStr,
 };
 
-use super::hit_samples::HitSampleInfo;
-
-use self::slider::HitObjectSlider;
-
-pub use self::{circle::HitObjectCircle, hold::HitObjectHold, spinner::HitObjectSpinner};
+use self::hit_samples::HitSampleInfo;
+pub use self::{
+    circle::HitObjectCircle,
+    decode::{HitObjects, HitObjectsState, ParseHitObjectsError},
+    hold::HitObjectHold,
+    slider::{
+        curve::{BorrowedCurve, Curve, CurveBuffers},
+        path::SliderPath,
+        path_type::{PathType, SplineType},
+        HitObjectSlider, PathControlPoint,
+    },
+    spinner::HitObjectSpinner,
+};
 
 mod circle;
+mod decode;
+pub mod hit_samples;
 mod hold;
-pub mod slider;
+mod slider;
 mod spinner;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -30,7 +40,7 @@ pub enum HitObjectKind {
     Hold(HitObjectHold),
 }
 
-/// The type of hit object.
+/// The type of a hit object.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct HitObjectType(i32);
 

@@ -1,5 +1,9 @@
 use std::str::FromStr;
 
+pub use self::decode::{Events, EventsState, ParseEventsError};
+
+mod decode;
+
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct BreakPeriod {
     pub start_time: f64,

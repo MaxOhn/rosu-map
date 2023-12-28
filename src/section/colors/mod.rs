@@ -4,7 +4,9 @@ use std::{
     str::FromStr,
 };
 
-use crate::section::colors::ParseColorsError;
+pub use self::decode::{Colors, ColorsKey, ColorsState, ParseColorsError};
+
+mod decode;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Color([u8; 4]);

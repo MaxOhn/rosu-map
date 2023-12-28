@@ -2,7 +2,10 @@ use std::{borrow::Cow, cmp::Ordering, convert::identity, f64::consts::PI, iter, 
 
 use crate::util::Pos;
 
-use super::hit_objects::slider::{PathControlPoint, PathType, SplineType};
+use super::{
+    path_type::{PathType, SplineType},
+    PathControlPoint,
+};
 
 const BEZIER_TOLERANCE: f32 = 0.25;
 const CATMULL_DETAIL: usize = 50;

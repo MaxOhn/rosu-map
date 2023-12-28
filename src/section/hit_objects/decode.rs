@@ -2,19 +2,17 @@ use std::{cmp, slice};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::{
-        format_version::{FormatVersion, ParseVersionError},
-        hit_objects::{
-            slider::{HitObjectSlider, PathControlPoint, PathType, SliderPath},
-            HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSpinner,
-            HitObjectType, ParseHitObjectTypeError,
-        },
-        hit_samples::{
-            HitSoundType, ParseHitSoundTypeError, ParseSampleBankInfoError, SampleBankInfo,
-        },
-    },
     reader::DecoderError,
+    section::hit_objects::slider::path_type::PathType,
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
+    {FormatVersion, ParseVersionError},
+};
+
+use super::{
+    hit_samples::{HitSoundType, ParseHitSoundTypeError, ParseSampleBankInfoError, SampleBankInfo},
+    slider::path::SliderPath,
+    HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSlider, HitObjectSpinner,
+    HitObjectType, ParseHitObjectTypeError, PathControlPoint,
 };
 
 /// Struct containing all data from a `.osu` file's `[HitObjects]` section.

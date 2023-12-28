@@ -151,7 +151,7 @@ impl TryFrom<i32> for SampleBank {
 #[error("invalid sample bank value")]
 pub struct ParseSampleBankError;
 
-/// The type of hit sample.
+/// The type of a hit sample.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct HitSoundType(u8);
 
@@ -226,7 +226,7 @@ impl BitAndAssign<u8> for HitSoundType {
 /// Sample info of a [`HitObject`] to convert [`HitSoundType`] into a [`Vec`]
 /// of [`HitSampleInfo`].
 /// 
-/// [`HitObject`]: crate::model::hit_objects::HitObject
+/// [`HitObject`]: crate::section::hit_objects::HitObject
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SampleBankInfo {
     pub filename: Option<String>,

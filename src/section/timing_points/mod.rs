@@ -1,16 +1,17 @@
 use std::{num::ParseIntError, str::FromStr};
 
 pub use self::{
-    difficulty::DifficultyPoint,
-    effect::EffectPoint,
-    sample::SamplePoint,
-    timing::{TimeSignature, TimeSignatureError, TimingPoint},
+    control_points::{
+        difficulty::DifficultyPoint,
+        effect::EffectPoint,
+        sample::SamplePoint,
+        timing::{TimeSignature, TimeSignatureError, TimingPoint},
+    },
+    decode::{ParseTimingPointsError, TimingPoints, TimingPointsState},
 };
 
-mod difficulty;
-mod effect;
-mod sample;
-mod timing;
+mod control_points;
+mod decode;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EffectFlags(u8);

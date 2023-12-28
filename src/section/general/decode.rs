@@ -1,14 +1,12 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::{
-        countdown::{CountdownType, ParseCountdownTypeError},
-        format_version::{FormatVersion, ParseVersionError},
-        hit_samples::{ParseSampleBankError, SampleBank},
-        mode::{GameMode, ParseGameModeError},
-    },
     reader::DecoderError,
+    section::hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
+    {FormatVersion, ParseVersionError},
 };
+
+use super::{CountdownType, GameMode, ParseCountdownTypeError, ParseGameModeError};
 
 /// Struct containing all data from a `.osu` file's `[General]` section.
 #[derive(Clone, Debug, Default, PartialEq)]

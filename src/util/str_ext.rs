@@ -22,7 +22,7 @@ pub trait StrExt {
 
 impl StrExt for str {
     fn trim_comment(&self) -> &str {
-        self.find("//").map_or(self, |i| self[..i].trim_end())
+        self.find("//").map_or(self, |i| &self[..i]).trim_end()
     }
 
     fn parse_num<N: ParseNumber>(&self) -> Result<N, ParseNumberError> {

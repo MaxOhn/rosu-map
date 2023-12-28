@@ -1,8 +1,8 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    model::format_version::{FormatVersion, ParseVersionError},
     reader::DecoderError,
     util::{KeyValue, ParseNumberError, StrExt},
+    {FormatVersion, ParseVersionError},
 };
 
 /// Struct containing all data from a `.osu` file's `[Editor]` section.
