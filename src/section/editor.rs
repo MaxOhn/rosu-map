@@ -5,6 +5,7 @@ use crate::{
     util::{KeyValue, ParseNumberError, StrExt},
 };
 
+/// Struct containing all data from a `.osu` file's `[Editor]` section.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Editor {
     pub bookmarks: Vec<i32>,
@@ -15,6 +16,7 @@ pub struct Editor {
 }
 
 section_keys! {
+    /// All valid keys within a `.osu` file's `[Editor]` section
     pub enum EditorKey {
         Bookmarks,
         DistanceSpacing,

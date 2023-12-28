@@ -1,11 +1,26 @@
-pub mod colors;
-pub mod difficulty;
-pub mod editor;
-pub mod events;
+/// Decode-related types for the `[General]` section.
 pub mod general;
-pub mod hit_objects;
+
+/// Decode-related types for the `[Editor]` section.
+pub mod editor;
+
+/// Decode-related types for the `[Difficulty]` section.
+pub mod difficulty;
+
+/// Decode-related types for the `[Metadata]` section.
 pub mod metadata;
+
+/// Decode-related types for the `[Events]` section.
+pub mod events;
+
+/// Decode-related types for the `[TimingPoints]` section.
 pub mod timing_points;
+
+/// Decode-related types for the `[Colours]` section.
+pub mod colors;
+
+/// Decode-related types for the `[HitObjects]` section.
+pub mod hit_objects;
 
 /// All sections in a `.osu` file.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -41,6 +56,7 @@ impl Section {
     }
 }
 
+/// The error of a failed parsing of a section key.
 #[derive(Debug, thiserror::Error)]
 #[error("unknown key")]
 pub struct UnknownKeyError;

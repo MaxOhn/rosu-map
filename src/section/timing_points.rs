@@ -2,8 +2,8 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     model::{
         control_points::{
-            DifficultyPoint, EffectPoint, SamplePoint, TimeSignature, TimeSignatureError,
-            TimingPoint,
+            DifficultyPoint, EffectFlags, EffectPoint, ParseEffectFlagsError, SamplePoint,
+            TimeSignature, TimeSignatureError, TimingPoint,
         },
         format_version::{FormatVersion, ParseVersionError},
         hit_samples::{ParseSampleBankError, SampleBank},
@@ -15,6 +15,7 @@ use crate::{
 
 use super::general::GeneralKey;
 
+/// Struct containing all data from a `.osu` file's `[TimingPoints]` section.
 #[derive(Default)]
 pub struct TimingPoints {
     pub timing_points: SortedVec<TimingPoint>,
@@ -30,6 +31,8 @@ pub enum ParseTimingPointsError {
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
+    #[error("failed to parse effect flags")]
+    EffectFlags(#[from] ParseEffectFlagsError),
     #[error("failed to parse mode")]
     Mode(#[from] ParseGameModeError),
     #[error("invalid line")]
@@ -44,19 +47,6 @@ pub enum ParseTimingPointsError {
     TimeSignature(#[from] TimeSignatureError),
     #[error("beat length cannot be NaN in a timing control point")]
     TimingControlPointNaN,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub(crate) struct EffectFlags(i32);
-
-impl EffectFlags {
-    pub(crate) const NONE: i32 = 0;
-    pub(crate) const KIAI: i32 = 1 << 0;
-    pub(crate) const OMIT_FIRST_BAR_LINE: i32 = 1 << 3;
-
-    const fn has_flag(self, flag: i32) -> bool {
-        (self.0 & flag) != 0
-    }
 }
 
 /// The parsing state for [`TimingPoints`] in [`DecodeBeatmap`].
@@ -189,7 +179,7 @@ impl DecodeBeatmap for TimingPoints {
         let mut omit_first_bar_signature = false;
 
         if let Some(next) = split.next() {
-            let effect_flags = EffectFlags(i32::parse(next)?);
+            let effect_flags: EffectFlags = next.parse()?;
             kiai_mode = effect_flags.has_flag(EffectFlags::KIAI);
             omit_first_bar_signature = effect_flags.has_flag(EffectFlags::OMIT_FIRST_BAR_LINE);
         }

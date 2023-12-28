@@ -1,10 +1,4 @@
-use std::{
-    cmp,
-    num::ParseIntError,
-    ops::{BitAnd, BitAndAssign},
-    slice,
-    str::{FromStr, Split},
-};
+use std::{cmp, slice};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
@@ -13,13 +7,17 @@ use crate::{
         hit_objects::{
             slider::{HitObjectSlider, PathControlPoint, PathType, SliderPath},
             HitObject, HitObjectCircle, HitObjectHold, HitObjectKind, HitObjectSpinner,
+            HitObjectType, ParseHitObjectTypeError,
         },
-        hit_samples::{HitSampleInfo, HitSampleInfoName, SampleBank},
+        hit_samples::{
+            HitSoundType, ParseHitSoundTypeError, ParseSampleBankInfoError, SampleBankInfo,
+        },
     },
     reader::DecoderError,
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
 };
 
+/// Struct containing all data from a `.osu` file's `[HitObjects]` section.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct HitObjects {
     pub hit_objects: Vec<HitObject>,
@@ -33,203 +31,19 @@ pub enum ParseHitObjectsError {
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse hit object type")]
-    HitObjectType(#[source] ParseIntError),
+    HitObjectType(#[from] ParseHitObjectTypeError),
     #[error("failed to parse hit sound type")]
-    HitSoundType(#[source] ParseIntError),
+    HitSoundType(#[from] ParseHitSoundTypeError),
     #[error("invalid line")]
     InvalidLine,
     #[error("repeat count is way too high")]
-    InvalidRepeatCount,
-    #[error("invalid sample bank")]
-    InvalidSampleBank,
+    InvalidRepeatCount(i32),
     #[error("failed to parse number")]
     Number(#[from] ParseNumberError),
+    #[error("invalid sample bank")]
+    SampleBankInfo(#[from] ParseSampleBankInfoError),
     #[error("unknown hit object type")]
-    UnknownHitObjectType,
-}
-
-#[derive(Copy, Clone, Default)]
-pub(crate) struct HitObjectType(i32);
-
-impl HitObjectType {
-    const CIRCLE: i32 = 1;
-    const SLIDER: i32 = 1 << 1;
-    const NEW_COMBO: i32 = 1 << 2;
-    const SPINNER: i32 = 1 << 3;
-    const COMBO_OFFSET: i32 = (1 << 4) | (1 << 5) | (1 << 6);
-    const HOLD: i32 = 1 << 7;
-
-    const fn has_flag(self, flag: i32) -> bool {
-        (self.0 & flag) != 0
-    }
-}
-
-impl From<&HitObject> for HitObjectType {
-    fn from(hit_object: &HitObject) -> Self {
-        let mut kind = 0;
-
-        match hit_object.kind {
-            HitObjectKind::Circle(ref h) => {
-                kind |= h.combo_offset << 4;
-
-                if h.new_combo {
-                    kind |= Self::NEW_COMBO;
-                }
-
-                kind |= Self::CIRCLE;
-            }
-            HitObjectKind::Slider(ref h) => {
-                kind |= h.combo_offset << 4;
-
-                if h.new_combo {
-                    kind |= Self::NEW_COMBO;
-                }
-
-                kind |= Self::SLIDER;
-            }
-            HitObjectKind::Spinner(ref h) => {
-                if h.new_combo {
-                    kind |= Self::NEW_COMBO;
-                }
-
-                kind |= Self::SPINNER;
-            }
-            HitObjectKind::Hold(_) => kind |= Self::HOLD,
-        }
-
-        Self(kind)
-    }
-}
-
-impl FromStr for HitObjectType {
-    type Err = ParseHitObjectsError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.parse()
-            .map(Self)
-            .map_err(ParseHitObjectsError::HitObjectType)
-    }
-}
-
-impl From<HitObjectType> for i32 {
-    fn from(kind: HitObjectType) -> Self {
-        kind.0
-    }
-}
-
-impl BitAnd<i32> for HitObjectType {
-    type Output = i32;
-
-    fn bitand(self, rhs: i32) -> Self::Output {
-        self.0 & rhs
-    }
-}
-
-impl BitAndAssign<i32> for HitObjectType {
-    fn bitand_assign(&mut self, rhs: i32) {
-        self.0 &= rhs;
-    }
-}
-
-#[derive(Copy, Clone, Default)]
-pub(crate) struct HitSoundType(u8);
-
-impl HitSoundType {
-    const NONE: u8 = 0;
-    const NORMAL: u8 = 1;
-    const WHISTLE: u8 = 2;
-    const FINISH: u8 = 4;
-    const CLAP: u8 = 5;
-
-    const fn has_flag(self, flag: u8) -> bool {
-        (self.0 & flag) != 0
-    }
-}
-
-impl From<&[HitSampleInfo]> for HitSoundType {
-    fn from(samples: &[HitSampleInfo]) -> Self {
-        let mut kind = Self::NONE;
-
-        for sample in samples.iter() {
-            match sample.name {
-                Some(HitSampleInfoName::Whistle) => kind |= Self::WHISTLE,
-                Some(HitSampleInfoName::Finish) => kind |= Self::FINISH,
-                Some(HitSampleInfoName::Clap) => kind |= Self::CLAP,
-                Some(HitSampleInfoName::Normal) | None => {}
-            }
-        }
-
-        Self(kind)
-    }
-}
-
-impl From<HitSoundType> for u8 {
-    fn from(kind: HitSoundType) -> Self {
-        kind.0
-    }
-}
-
-impl FromStr for HitSoundType {
-    type Err = ParseHitObjectsError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.parse()
-            .map(Self)
-            .map_err(ParseHitObjectsError::HitSoundType)
-    }
-}
-
-impl PartialEq<u8> for HitSoundType {
-    fn eq(&self, other: &u8) -> bool {
-        self.0.eq(other)
-    }
-}
-
-#[derive(Clone, Default)]
-struct SampleBankInfo {
-    filename: Option<String>,
-    bank_for_normal: Option<SampleBank>,
-    bank_for_addition: Option<SampleBank>,
-    volume: i32,
-    custom_sample_bank: i32,
-}
-
-impl SampleBankInfo {
-    fn read_custom_sample_banks(
-        &mut self,
-        mut split: Split<'_, char>,
-    ) -> Result<(), ParseHitObjectsError> {
-        let Some(first) = split.next() else {
-            return Ok(());
-        };
-
-        let bank = i32::parse(first)?.try_into().unwrap_or(SampleBank::Normal);
-
-        let add_bank = split
-            .next()
-            .ok_or(ParseHitObjectsError::InvalidSampleBank)?
-            .parse_num::<i32>()?
-            .try_into()
-            .unwrap_or(SampleBank::Normal);
-
-        let normal_bank = (bank != SampleBank::None).then_some(bank);
-        let add_bank = (add_bank != SampleBank::None).then_some(add_bank);
-
-        self.bank_for_normal = normal_bank;
-        self.bank_for_addition = add_bank.or(normal_bank);
-
-        if let Some(next) = split.next() {
-            self.custom_sample_bank = next.parse_num()?;
-        }
-
-        if let Some(next) = split.next() {
-            self.volume = cmp::max(0, next.parse_num()?);
-        }
-
-        self.filename = split.next().map(str::to_owned);
-
-        Ok(())
-    }
+    UnknownHitObjectType(HitObjectType),
 }
 
 /// The parsing state for [`HitObjects`] in [`DecodeBeatmap`].
@@ -244,33 +58,7 @@ pub struct HitObjectsState {
 }
 
 impl HitObjectsState {
-    /// Given a `&str` iterator, this method prepares a slice and provides
-    /// that slice to the given function `f`.
-    ///
-    /// Instead of collecting a `&str` iterator into a new vec each time,
-    /// this method re-uses the same buffer to avoid allocations.
-    ///
-    /// It is a safe abstraction around transmuting the `point_split` field.
-    fn point_split<'a, I, F, O>(&mut self, point_split: I, f: F) -> O
-    where
-        I: Iterator<Item = &'a str>,
-        F: FnOnce(&mut Self, &[&'a str]) -> O,
-    {
-        self.point_split.extend(point_split.map(|s| s as *const _));
-        let ptr = self.point_split.as_ptr();
-        let len = self.point_split.len();
-
-        // SAFETY:
-        // - *const str and &str have the same layout.
-        // - `self.point_split` is cleared after every use, ensuring that it
-        //   does not contain any invalid pointers.
-        let point_split = unsafe { slice::from_raw_parts(ptr.cast(), len) };
-        let res = f(self, point_split);
-        self.point_split.clear();
-
-        res
-    }
-
+    /// Processes the point string of a slider hit object.
     fn convert_path_str(
         &mut self,
         point_str: &str,
@@ -313,6 +101,7 @@ impl HitObjectsState {
         self.point_split(point_str.split('|'), f)
     }
 
+    /// Process a slice of points and store them in internal buffers.
     fn convert_points(
         &mut self,
         points: &[&str],
@@ -411,9 +200,37 @@ impl HitObjectsState {
         Ok(())
     }
 
+    /// Whether the last object was a spinner.
     fn last_object_was_spinner(&self) -> bool {
         self.last_object
             .is_some_and(|kind| kind.has_flag(HitObjectType::SPINNER))
+    }
+
+    /// Given a `&str` iterator, this method prepares a slice and provides
+    /// that slice to the given function `f`.
+    ///
+    /// Instead of collecting a `&str` iterator into a new vec each time,
+    /// this method re-uses the same buffer to avoid allocations.
+    ///
+    /// It is a safe abstraction around transmuting the `point_split` field.
+    fn point_split<'a, I, F, O>(&mut self, point_split: I, f: F) -> O
+    where
+        I: Iterator<Item = &'a str>,
+        F: FnOnce(&mut Self, &[&'a str]) -> O,
+    {
+        self.point_split.extend(point_split.map(|s| s as *const _));
+        let ptr = self.point_split.as_ptr();
+        let len = self.point_split.len();
+
+        // SAFETY:
+        // - *const str and &str have the same layout.
+        // - `self.point_split` is cleared after every use, ensuring that it
+        //   does not contain any invalid pointers.
+        let point_split = unsafe { slice::from_raw_parts(ptr.cast(), len) };
+        let res = f(self, point_split);
+        self.point_split.clear();
+
+        res
     }
 }
 
@@ -529,7 +346,7 @@ impl DecodeBeatmap for HitObjects {
             let mut repeat_count = repeat_count.parse_num::<i32>()?;
 
             if repeat_count > 9000 {
-                return Err(ParseHitObjectsError::InvalidRepeatCount);
+                return Err(ParseHitObjectsError::InvalidRepeatCount(repeat_count));
             }
 
             repeat_count = cmp::max(0, repeat_count - 1);
@@ -572,7 +389,7 @@ impl DecodeBeatmap for HitObjects {
             let node_samples: Vec<_> = node_bank_infos
                 .into_iter()
                 .zip(node_sound_types)
-                .map(|(bank_info, sound_type)| convert_sound_type(sound_type, bank_info))
+                .map(|(bank_info, sound_type)| bank_info.convert_sound_type(sound_type))
                 .collect();
 
             state.convert_path_str(point_str, pos)?;
@@ -629,13 +446,13 @@ impl DecodeBeatmap for HitObjects {
 
             HitObjectKind::Hold(hold)
         } else {
-            return Err(ParseHitObjectsError::UnknownHitObjectType);
+            return Err(ParseHitObjectsError::UnknownHitObjectType(hit_object_type));
         };
 
         let result = HitObject {
             start_time,
             kind,
-            samples: convert_sound_type(sound_type, bank_info),
+            samples: bank_info.convert_sound_type(sound_type),
         };
 
         state.first_object = false;
@@ -644,56 +461,4 @@ impl DecodeBeatmap for HitObjects {
 
         Ok(())
     }
-}
-
-fn convert_sound_type(sound_type: HitSoundType, bank_info: SampleBankInfo) -> Vec<HitSampleInfo> {
-    let mut sound_types = Vec::new();
-
-    if bank_info.filename.as_ref().is_some_and(|s| !s.is_empty()) {
-        sound_types.push(HitSampleInfo {
-            filename: bank_info.filename,
-            ..HitSampleInfo::new(None, None, 1, bank_info.volume)
-        });
-    } else {
-        let mut sample = HitSampleInfo::new(
-            Some(HitSampleInfoName::Normal),
-            bank_info.bank_for_normal,
-            bank_info.custom_sample_bank,
-            bank_info.volume,
-        );
-
-        sample.is_layered =
-            sound_type != HitSoundType::NONE && !sound_type.has_flag(HitSoundType::NORMAL);
-
-        sound_types.push(sample);
-    }
-
-    if sound_type.has_flag(HitSoundType::FINISH) {
-        sound_types.push(HitSampleInfo::new(
-            Some(HitSampleInfoName::Finish),
-            bank_info.bank_for_addition,
-            bank_info.custom_sample_bank,
-            bank_info.volume,
-        ));
-    }
-
-    if sound_type.has_flag(HitSoundType::WHISTLE) {
-        sound_types.push(HitSampleInfo::new(
-            Some(HitSampleInfoName::Whistle),
-            bank_info.bank_for_addition,
-            bank_info.custom_sample_bank,
-            bank_info.volume,
-        ));
-    }
-
-    if sound_type.has_flag(HitSoundType::CLAP) {
-        sound_types.push(HitSampleInfo::new(
-            Some(HitSampleInfoName::Clap),
-            bank_info.bank_for_addition,
-            bank_info.custom_sample_bank,
-            bank_info.volume,
-        ));
-    }
-
-    sound_types
 }

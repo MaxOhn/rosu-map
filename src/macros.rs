@@ -1,9 +1,13 @@
 #[macro_export]
 #[doc(hidden)]
 macro_rules! section_keys {
-    ( pub enum $name:ident {
-        $( $variant:ident, )*
-    }) => {
+    (
+        $( #[$meta:meta] )?
+        pub enum $name:ident {
+            $( $variant:ident, )*
+        }
+    ) => {
+        $( #[$meta] )?
         #[derive(Copy, Clone, Debug, PartialEq, Eq)]
         pub enum $name {
             $( $variant, )*

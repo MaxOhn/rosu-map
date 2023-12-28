@@ -61,7 +61,9 @@ pub struct TimeSignature {
 impl TimeSignature {
     /// Create a new [`TimeSignature`].
     ///
-    /// `numerator` must be greater than 0.
+    /// # Errors
+    ///
+    /// Returns an error if `numerator` is non-positive.
     pub fn new(numerator: i32) -> Result<Self, TimeSignatureError> {
         u32::try_from(numerator)
             .ok()

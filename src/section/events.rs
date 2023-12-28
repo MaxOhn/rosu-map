@@ -8,6 +8,7 @@ use crate::{
     util::{ParseNumber, ParseNumberError, StrExt},
 };
 
+/// Struct containing all data from a `.osu` file's `[Events]` section.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Events {
     pub background_file: String,

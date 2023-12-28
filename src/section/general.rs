@@ -10,6 +10,7 @@ use crate::{
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
 };
 
+/// Struct containing all data from a `.osu` file's `[General]` section.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct General {
     pub audio_file: String,
@@ -29,6 +30,7 @@ pub struct General {
 }
 
 section_keys! {
+    /// All valid keys within a `.osu` file's `[General]` section
     pub enum GeneralKey {
         AudioFilename,
         AudioLeadIn,

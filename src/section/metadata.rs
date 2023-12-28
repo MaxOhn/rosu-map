@@ -5,6 +5,7 @@ use crate::{
     util::{KeyValue, ParseNumberError, StrExt},
 };
 
+/// Struct containing all data from a `.osu` file's `[Metadata]` section.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Metadata {
     pub title: String,
@@ -20,6 +21,7 @@ pub struct Metadata {
 }
 
 section_keys! {
+    /// All valid keys within a `.osu` file's `[Metadata]` section
     pub enum MetadataKey {
         Title,
         TitleUnicode,

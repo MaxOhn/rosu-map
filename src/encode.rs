@@ -7,22 +7,17 @@ use std::{
 use crate::{
     model::{
         beatmap::Beatmap,
-        control_points::{DifficultyPoint, EffectPoint, SamplePoint, TimingPoint},
+        control_points::{DifficultyPoint, EffectFlags, EffectPoint, SamplePoint, TimingPoint},
         events::EventType,
         hit_objects::{
             slider::{HitObjectSlider, PathType, SplineType},
-            HitObjectKind,
+            HitObjectKind, HitObjectType,
         },
-        hit_samples::{HitSampleInfo, HitSampleInfoName},
+        hit_samples::{HitSampleInfo, HitSampleInfoName, HitSoundType},
         mode::GameMode,
     },
     section::{
-        difficulty::DifficultyKey,
-        editor::EditorKey,
-        general::GeneralKey,
-        hit_objects::{HitObjectType, HitSoundType},
-        metadata::MetadataKey,
-        timing_points::EffectFlags,
+        difficulty::DifficultyKey, editor::EditorKey, general::GeneralKey, metadata::MetadataKey,
     },
     util::Pos,
 };

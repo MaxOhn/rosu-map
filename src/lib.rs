@@ -17,15 +17,20 @@
 #[macro_use]
 mod macros;
 
+mod decode;
 mod encode;
 mod reader;
 
-pub mod decode;
+/// All parsed types contained in a `.osu` file.
 pub mod model;
+
+/// Decode-related types for all sections.
 pub mod section;
+
+/// Various utility types for usage in and around this library.
 pub mod util;
 
 pub use crate::{
-    decode::{DecodeBeatmap, DecodeState},
+    decode::{DecodeBeatmap, DecodeState, DecoderError},
     model::beatmap::Beatmap,
 };

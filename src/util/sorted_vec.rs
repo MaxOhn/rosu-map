@@ -47,6 +47,15 @@ impl<T> SortedVec<T> {
     /// Retains only the elements specified by the predicate.
     ///
     /// In other words, remove all items `i` for which `f(&i)` returns `false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use rosu_map::util::SortedVec;
+    /// let mut vec: SortedVec<i32> = [1, 2, 3, 4].into_iter().collect();
+    /// vec.retain(|&x| x % 2 == 0);
+    /// assert_eq!(vec.as_slice(), &[2, 4]);
+    /// ```
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&T) -> bool,
@@ -57,13 +66,39 @@ impl<T> SortedVec<T> {
 
 impl<T: Sortable> SortedVec<T> {
     /// Same as [`slice::binary_search_by`] with the function
-    /// [`<T as Sortable>::cmp`](Sortable::cmp).
+    /// [`<T as Sortable>::cmp`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use rosu_map::util::SortedVec;
+    /// let s: SortedVec<i32> = [0, 1, 3, 5, 8, 13, 21, 34].into_iter().collect();
+    ///
+    /// assert_eq!(s.find(&13), Ok(5));
+    /// assert_eq!(s.find(&4), Err(3));
+    /// assert_eq!(s.find(&100), Err(8));
+    /// assert_eq!(s.find(&1), Ok(1));
+    /// ```
+    ///
+    /// [`<T as Sortable>::cmp`]: Sortable::cmp
     pub fn find(&self, value: &T) -> Result<usize, usize> {
         self.inner
             .binary_search_by(|probe| <T as Sortable>::cmp(probe, value))
     }
 
     /// Push a new value into the sorted list based on [`<T as Sortable>::push`](Sortable::push).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use rosu_map::util::SortedVec;
+    /// let mut vec = SortedVec::new();
+    /// vec.push(3);
+    /// vec.push(1);
+    /// vec.push(2);
+    /// vec.push(1);
+    /// assert_eq!(vec.as_slice(), &[1, 2, 3]);
+    /// ```
     pub fn push(&mut self, value: T) {
         <T as Sortable>::push(value, self);
     }

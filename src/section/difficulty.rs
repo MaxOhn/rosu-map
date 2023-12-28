@@ -5,6 +5,7 @@ use crate::{
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
 };
 
+/// Struct containing all data from a `.osu` file's `[Difficulty]` section.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Difficulty {
     pub hp_drain_rate: f32,
@@ -16,6 +17,7 @@ pub struct Difficulty {
 }
 
 section_keys! {
+    /// All valid keys within a `.osu` file's `[Difficulty]` section
     pub enum DifficultyKey {
         HPDrainRate,
         CircleSize,

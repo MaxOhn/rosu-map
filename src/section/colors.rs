@@ -12,12 +12,14 @@ use crate::{
 
 use super::UnknownKeyError;
 
+/// Struct containing all data from a `.osu` file's `[Colours]` section.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Colors {
     pub custom_combo_colors: Vec<Color>,
     pub custom_colors: CustomColors,
 }
 
+/// All valid keys within a `.osu` file's `[Colours]` section
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ColorsKey {
     Combo,

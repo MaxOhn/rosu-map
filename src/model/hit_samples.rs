@@ -1,14 +1,19 @@
 use std::{
+    cmp,
     fmt::{Display, Formatter, Result as FmtResult},
-    str::FromStr,
+    num::{NonZeroU32, ParseIntError},
+    ops::{BitAnd, BitAndAssign},
+    str::{FromStr, Split},
 };
+
+use crate::util::{ParseNumber, ParseNumberError, StrExt};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HitSampleInfo {
     pub name: Option<HitSampleInfoName>,
     pub filename: Option<String>,
     pub bank: SampleBank,
-    pub suffix: Option<i32>,
+    pub suffix: Option<NonZeroU32>,
     pub volume: i32,
     pub custom_sample_bank: i32,
     pub bank_specified: bool,
@@ -55,7 +60,11 @@ impl HitSampleInfo {
             name,
             filename: None,
             bank: bank.unwrap_or(Self::BANK_NORMAL),
-            suffix: (custom_sample_bank >= 2).then_some(custom_sample_bank),
+            suffix: (custom_sample_bank >= 2)
+                .then(|| 
+                    // SAFETY: The value is guaranteed to be >= 2
+                    unsafe { NonZeroU32::new_unchecked(custom_sample_bank as u32) }
+                ),
             volume,
             custom_sample_bank,
             bank_specified: bank.is_some(),
@@ -137,6 +146,193 @@ impl TryFrom<i32> for SampleBank {
     }
 }
 
+/// Error type for a failed parsing of [`SampleBank`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid sample bank value")]
 pub struct ParseSampleBankError;
+
+/// The type of hit sample.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct HitSoundType(u8);
+
+impl HitSoundType {
+    pub const NONE: u8 = 0;
+    pub const NORMAL: u8 = 1;
+    pub const WHISTLE: u8 = 2;
+    pub const FINISH: u8 = 4;
+    pub const CLAP: u8 = 5;
+
+    pub const fn has_flag(self, flag: u8) -> bool {
+        (self.0 & flag) != 0
+    }
+}
+
+impl From<&[HitSampleInfo]> for HitSoundType {
+    fn from(samples: &[HitSampleInfo]) -> Self {
+        let mut kind = Self::NONE;
+
+        for sample in samples.iter() {
+            match sample.name {
+                Some(HitSampleInfoName::Whistle) => kind |= Self::WHISTLE,
+                Some(HitSampleInfoName::Finish) => kind |= Self::FINISH,
+                Some(HitSampleInfoName::Clap) => kind |= Self::CLAP,
+                Some(HitSampleInfoName::Normal) | None => {}
+            }
+        }
+
+        Self(kind)
+    }
+}
+
+impl From<HitSoundType> for u8 {
+    fn from(kind: HitSoundType) -> Self {
+        kind.0
+    }
+}
+
+impl FromStr for HitSoundType {
+    type Err = ParseHitSoundTypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse().map(Self).map_err(ParseHitSoundTypeError)
+    }
+}
+
+/// Error type for a failed parsing of [`HitSoundType`].
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+#[error("invalid hit sound type")]
+pub struct ParseHitSoundTypeError(#[source] ParseIntError);
+
+impl PartialEq<u8> for HitSoundType {
+    fn eq(&self, other: &u8) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl BitAnd<u8> for HitSoundType {
+    type Output = u8;
+
+    fn bitand(self, rhs: u8) -> Self::Output {
+        self.0 & rhs
+    }
+}
+
+impl BitAndAssign<u8> for HitSoundType {
+    fn bitand_assign(&mut self, rhs: u8) {
+        self.0 &= rhs;
+    }
+}
+
+/// Sample info of a [`HitObject`] to convert [`HitSoundType`] into a [`Vec`]
+/// of [`HitSampleInfo`].
+/// 
+/// [`HitObject`]: crate::model::hit_objects::HitObject
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct SampleBankInfo {
+    pub filename: Option<String>,
+    pub bank_for_normal: Option<SampleBank>,
+    pub bank_for_addition: Option<SampleBank>,
+    pub volume: i32,
+    pub custom_sample_bank: i32,
+}
+
+impl SampleBankInfo {
+    /// Read and store custom sample banks.
+    pub fn read_custom_sample_banks(
+        &mut self,
+        mut split: Split<'_, char>,
+    ) -> Result<(), ParseSampleBankInfoError> {
+        let Some(first) = split.next() else {
+            return Ok(());
+        };
+
+        let bank = i32::parse(first)?.try_into().unwrap_or(SampleBank::Normal);
+
+        let add_bank = split
+            .next()
+            .ok_or(ParseSampleBankInfoError::MissingInfo)?
+            .parse_num::<i32>()?
+            .try_into()
+            .unwrap_or(SampleBank::Normal);
+
+        let normal_bank = (bank != SampleBank::None).then_some(bank);
+        let add_bank = (add_bank != SampleBank::None).then_some(add_bank);
+
+        self.bank_for_normal = normal_bank;
+        self.bank_for_addition = add_bank.or(normal_bank);
+
+        if let Some(next) = split.next() {
+            self.custom_sample_bank = next.parse_num()?;
+        }
+
+        if let Some(next) = split.next() {
+            self.volume = cmp::max(0, next.parse_num()?);
+        }
+
+        self.filename = split.next().map(str::to_owned);
+
+        Ok(())
+    }
+
+    /// Convert a [`HitSoundType`] into a [`Vec`] of [`HitSampleInfo`].
+    pub fn convert_sound_type(self, sound_type: HitSoundType) -> Vec<HitSampleInfo> {
+        let mut sound_types = Vec::new();
+
+        if self.filename.as_ref().is_some_and(|s| !s.is_empty()) {
+            sound_types.push(HitSampleInfo {
+                filename: self.filename,
+                ..HitSampleInfo::new(None, None, 1, self.volume)
+            });
+        } else {
+            let mut sample = HitSampleInfo::new(
+                Some(HitSampleInfoName::Normal),
+                self.bank_for_normal,
+                self.custom_sample_bank,
+                self.volume,
+            );
+
+            sample.is_layered =
+                sound_type != HitSoundType::NONE && !sound_type.has_flag(HitSoundType::NORMAL);
+
+            sound_types.push(sample);
+        }
+
+        if sound_type.has_flag(HitSoundType::FINISH) {
+            sound_types.push(HitSampleInfo::new(
+                Some(HitSampleInfoName::Finish),
+                self.bank_for_addition,
+                self.custom_sample_bank,
+                self.volume,
+            ));
+        }
+
+        if sound_type.has_flag(HitSoundType::WHISTLE) {
+            sound_types.push(HitSampleInfo::new(
+                Some(HitSampleInfoName::Whistle),
+                self.bank_for_addition,
+                self.custom_sample_bank,
+                self.volume,
+            ));
+        }
+
+        if sound_type.has_flag(HitSoundType::CLAP) {
+            sound_types.push(HitSampleInfo::new(
+                Some(HitSampleInfoName::Clap),
+                self.bank_for_addition,
+                self.custom_sample_bank,
+                self.volume,
+            ));
+        }
+
+        sound_types
+    }
+}
+
+/// All the ways that parsing into [`SampleBankInfo`] can fail.
+#[derive(Debug, thiserror::Error)]
+pub enum ParseSampleBankInfoError {
+    #[error("missing info")]
+    MissingInfo,
+    #[error("failed to parse number")]
+    Number(#[from] ParseNumberError),
+}

@@ -1,5 +1,8 @@
 use std::str::FromStr;
 
+/// The game mode of a [`Beatmap`].
+///
+/// [`Beatmap`]: crate::model::beatmap::Beatmap
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum GameMode {
     #[default]
@@ -9,6 +12,7 @@ pub enum GameMode {
     Mania,
 }
 
+/// Error type for a failed parsing of [`GameMode`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid game mode")]
 pub struct ParseGameModeError;
