@@ -33,6 +33,6 @@ pub mod util;
 
 pub use crate::{
     beatmap::Beatmap,
-    decode::{DecodeBeatmap, DecodeState, DecoderError},
+    decode::{from_bytes, from_path, from_str, DecodeBeatmap, DecodeState, DecoderError},
     format_version::{FormatVersion, ParseVersionError},
 };

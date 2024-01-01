@@ -1,4 +1,10 @@
-use std::{error::Error, io::BufRead, ops::ControlFlow};
+use std::{
+    error::Error,
+    fs::File,
+    io::{BufRead, BufReader, Cursor},
+    ops::ControlFlow,
+    path::Path,
+};
 
 use crate::{
     reader::Reader,
@@ -7,6 +13,28 @@ use crate::{
 };
 
 pub use crate::reader::DecoderError;
+
+/// Parse a type that implements [`DecodeBeatmap`] by providing a path to a
+/// `.osu` file.
+pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, D::Error> {
+    File::open(path)
+        .map_err(DecoderError::from)
+        .map_err(D::Error::from)
+        .map(BufReader::new)
+        .and_then(D::decode)
+}
+
+/// Parse a type that implements [`DecodeBeatmap`] by providing the content of
+/// a `.osu` file as a slice of bytes.
+pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, D::Error> {
+    D::decode(Cursor::new(bytes))
+}
+
+/// Parse a type that implements [`DecodeBeatmap`] by providing the content of
+/// a `.osu` file as a string.
+pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, D::Error> {
+    D::decode(Cursor::new(s))
+}
 
 /// Intermediate state while parsing via [`DecodeBeatmap`].
 pub trait DecodeState: Sized {

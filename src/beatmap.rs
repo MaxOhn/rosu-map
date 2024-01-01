@@ -1,9 +1,4 @@
-use std::{
-    fs::File,
-    io::{BufReader, Cursor, Error as IoError},
-    path::Path,
-    str::FromStr,
-};
+use std::{path::Path, str::FromStr};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
@@ -17,6 +12,7 @@ use crate::{
         hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError},
         metadata::{Metadata, MetadataState, ParseMetadataError},
         timing_points::{
+            difficulty_point_at, effect_point_at, sample_point_at, timing_point_at,
             DifficultyPoint, EffectPoint, ParseTimingPointsError, SamplePoint, TimingPoint,
             TimingPoints, TimingPointsState,
         },
@@ -26,7 +22,7 @@ use crate::{
 };
 
 /// Fully parsed content of a `.osu` file.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Beatmap {
     pub format_version: FormatVersion,
 
@@ -92,16 +88,33 @@ pub struct Beatmap {
 impl Beatmap {
     /// Parse a [`Beatmap`] by providing a path to a `.osu` file.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, ParseBeatmapError> {
-        File::open(path)
-            .map_err(ParseBeatmapError::OpenFile)
-            .map(BufReader::new)
-            .and_then(Self::decode)
+        crate::from_path(path)
     }
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// slice of bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ParseBeatmapError> {
-        Self::decode(Cursor::new(bytes))
+        crate::from_bytes(bytes)
+    }
+
+    /// Finds the [`DifficultyPoint`] that is active at the given time.
+    pub fn difficulty_point_at(&self, time: f64) -> Option<&DifficultyPoint> {
+        difficulty_point_at(&self.difficulty_points, time)
+    }
+
+    /// Finds the [`EffectPoint`] that is active at the given time.
+    pub fn effect_point_at(&self, time: f64) -> Option<&EffectPoint> {
+        effect_point_at(&self.effect_points, time)
+    }
+
+    /// Finds the [`SamplePoint`] that is active at the given time.
+    pub fn sample_point_at(&self, time: f64) -> Option<&SamplePoint> {
+        sample_point_at(&self.sample_points, time)
+    }
+
+    /// Finds the [`TimingPoint`] that is active at the given time.
+    pub fn timing_point_at(&self, time: f64) -> Option<&TimingPoint> {
+        timing_point_at(&self.timing_points, time)
     }
 }
 
@@ -111,15 +124,63 @@ impl FromStr for Beatmap {
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::decode(Cursor::new(s))
+        crate::from_str(s)
+    }
+}
+
+impl Default for Beatmap {
+    fn default() -> Self {
+        Self {
+            format_version: FormatVersion(FormatVersion::LATEST),
+            audio_file: Default::default(),
+            audio_lead_in: Default::default(),
+            preview_time: -1,
+            stack_leniency: 0.7,
+            mode: Default::default(),
+            letterbox_in_breaks: Default::default(),
+            special_style: Default::default(),
+            widescreen_storyboard: Default::default(),
+            epilepsy_warning: Default::default(),
+            samples_match_playback_rate: Default::default(),
+            countdown: CountdownType::Normal,
+            countdown_offset: Default::default(),
+            bookmarks: Default::default(),
+            distance_spacing: Default::default(),
+            beat_divisor: Default::default(),
+            grid_size: Default::default(),
+            timeline_zoom: Default::default(),
+            title: Default::default(),
+            title_unicode: Default::default(),
+            artist: Default::default(),
+            artist_unicode: Default::default(),
+            creator: Default::default(),
+            version: Default::default(),
+            source: Default::default(),
+            tags: Default::default(),
+            beatmap_id: Default::default(),
+            beatmap_set_id: Default::default(),
+            hp_drain_rate: Default::default(),
+            circle_size: Default::default(),
+            overall_difficulty: Default::default(),
+            approach_rate: Default::default(),
+            slider_multiplier: Default::default(),
+            slider_tick_rate: Default::default(),
+            background_file: Default::default(),
+            breaks: Default::default(),
+            timing_points: Default::default(),
+            difficulty_points: Default::default(),
+            effect_points: Default::default(),
+            sample_points: Default::default(),
+            custom_combo_colors: Default::default(),
+            custom_colors: Default::default(),
+            hit_objects: Default::default(),
+        }
     }
 }
 
 /// All the ways that parsing a `.osu` file into [`Beatmap`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseBeatmapError {
-    #[error("failed to open file")]
-    OpenFile(#[source] IoError),
     #[error("decoder error")]
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]

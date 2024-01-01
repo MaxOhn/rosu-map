@@ -37,6 +37,24 @@ pub struct HitObject {
     pub samples: Vec<HitSampleInfo>,
 }
 
+impl HitObject {
+    /// Whether the [`HitObject`] starts a new combo.
+    pub fn new_combo(&self) -> bool {
+        self.kind.new_combo()
+    }
+
+    /// Returns the end time of the [`HitObject`].
+    // TODO: immutable reference?
+    pub fn end_time(&mut self) -> f64 {
+        match self.kind {
+            HitObjectKind::Circle(_) => self.start_time,
+            HitObjectKind::Slider(ref h) => todo!(),
+            HitObjectKind::Spinner(ref h) => self.start_time + h.duration,
+            HitObjectKind::Hold(ref h) => self.start_time + h.duration,
+        }
+    }
+}
+
 /// Additional data for a [`HitObject`] depending on its type.
 #[derive(Clone, Debug, PartialEq)]
 pub enum HitObjectKind {
@@ -44,6 +62,18 @@ pub enum HitObjectKind {
     Slider(HitObjectSlider),
     Spinner(HitObjectSpinner),
     Hold(HitObjectHold),
+}
+
+impl HitObjectKind {
+    /// Whether the [`HitObjectKind`] starts a new combo.
+    pub fn new_combo(&self) -> bool {
+        match self {
+            HitObjectKind::Circle(h) => h.new_combo,
+            HitObjectKind::Slider(h) => h.new_combo,
+            HitObjectKind::Spinner(h) => h.new_combo,
+            HitObjectKind::Hold(_) => false,
+        }
+    }
 }
 
 /// The type of a [`HitObject`].

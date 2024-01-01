@@ -14,9 +14,17 @@ pub struct BreakPeriod {
 }
 
 impl BreakPeriod {
+    /// The minimum duration required for a break to have any effect.
+    pub const MIN_BREAK_DURATION: f64 = 650.0;
+
     /// The duration of the break.
     pub fn duration(&self) -> f64 {
         self.end_time - self.start_time
+    }
+
+    /// Whether the break has any effect.
+    pub fn has_effect(&self) -> bool {
+        self.duration() >= Self::MIN_BREAK_DURATION
     }
 }
 

@@ -17,6 +17,15 @@ pub struct Colors {
     pub custom_colors: Vec<CustomColor>,
 }
 
+impl Colors {
+    pub const DEFAULT_COMBO_COLORS: [Color; 4] = [
+        Color([255, 192, 0, 255]),
+        Color([0, 202, 0, 255]),
+        Color([18, 124, 255, 255]),
+        Color([242, 24, 57, 255]),
+    ];
+}
+
 /// All valid keys within a `.osu` file's `[Colours]` section
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ColorsKey {

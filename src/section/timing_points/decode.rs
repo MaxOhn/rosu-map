@@ -10,7 +10,8 @@ use crate::{
 };
 
 use super::{
-    DifficultyPoint, EffectFlags, EffectPoint, ParseEffectFlagsError, SamplePoint, TimeSignature,
+    difficulty_point_at, effect_point_at, sample_point_at, timing_point_at, DifficultyPoint,
+    EffectFlags, EffectPoint, ParseEffectFlagsError, SamplePoint, TimeSignature,
     TimeSignatureError, TimingPoint,
 };
 
@@ -46,6 +47,28 @@ pub enum ParseTimingPointsError {
     TimeSignature(#[from] TimeSignatureError),
     #[error("beat length cannot be NaN in a timing control point")]
     TimingControlPointNaN,
+}
+
+impl TimingPoints {
+    /// Finds the [`DifficultyPoint`] that is active at the given time.
+    pub fn difficulty_point_at(&self, time: f64) -> Option<&DifficultyPoint> {
+        difficulty_point_at(&self.difficulty_points, time)
+    }
+
+    /// Finds the [`EffectPoint`] that is active at the given time.
+    pub fn effect_point_at(&self, time: f64) -> Option<&EffectPoint> {
+        effect_point_at(&self.effect_points, time)
+    }
+
+    /// Finds the [`SamplePoint`] that is active at the given time.
+    pub fn sample_point_at(&self, time: f64) -> Option<&SamplePoint> {
+        sample_point_at(&self.sample_points, time)
+    }
+
+    /// Finds the [`TimingPoint`] that is active at the given time.
+    pub fn timing_point_at(&self, time: f64) -> Option<&TimingPoint> {
+        timing_point_at(&self.timing_points, time)
+    }
 }
 
 /// The parsing state for [`TimingPoints`] in [`DecodeBeatmap`].
