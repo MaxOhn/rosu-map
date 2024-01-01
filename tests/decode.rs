@@ -819,7 +819,7 @@ fn multi_segment_sliders() {
 #[test]
 fn slider_len_extension_edge_case() {
     let hit_objects =
-        rosu_map::from_path::<HitObjects>("../resources/duplicate-last_position-slider.osu")
+        rosu_map::from_path::<HitObjects>("../resources/duplicate-last-position-slider.osu")
             .unwrap()
             .hit_objects;
 

@@ -37,9 +37,10 @@ impl FromStr for ColorsKey {
     type Err = UnknownKeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Combo" => Ok(Self::Combo),
-            name => Ok(Self::Name(name.to_owned())),
+        if s.starts_with("Combo") {
+            Ok(Self::Combo)
+        } else {
+            Ok(Self::Name(s.to_owned()))
         }
     }
 }
