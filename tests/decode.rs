@@ -18,6 +18,7 @@ use rosu_map::{
     util::Pos,
     Beatmap, ParseVersionError,
 };
+use test_log::test;
 
 const RENATUS: &str = include_str!("../resources/Soleily - Renatus (Gamu) [Insane].osu");
 

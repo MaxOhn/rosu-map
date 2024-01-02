@@ -314,21 +314,33 @@ fn parse_section<R: BufRead, S, E>(
     f: fn(&mut S, &str) -> Result<(), E>,
 ) -> Result<SectionFlow, E>
 where
-    E: From<DecoderError>,
+    E: Error + From<DecoderError>,
 {
     let mut f = |line: &str| {
         if let Some(next) = Section::try_from_line(line) {
-            return Ok(ControlFlow::Break(SectionFlow::Continue(next)));
+            return ControlFlow::Break(SectionFlow::Continue(next));
         }
 
-        f(state, line).map(ControlFlow::Continue)
+        let _res = f(state, line);
+
+        #[cfg(feature = "tracing")]
+        if let Err(err) = _res {
+            tracing::error!("Failed to process line {line:?}: {err}");
+            let mut err = &err as &dyn Error;
+
+            while let Some(src) = err.source() {
+                tracing::error!("  - caused by: {src}");
+                err = src;
+            }
+        }
+
+        ControlFlow::Continue(())
     };
 
     loop {
         match reader.next_line(&mut f) {
-            Ok(Some(Ok(ControlFlow::Continue(())))) => {}
-            Ok(Some(Ok(ControlFlow::Break(flow)))) => return Ok(flow),
-            Ok(Some(Err(err))) => return Err(err),
+            Ok(Some(ControlFlow::Continue(()))) => {}
+            Ok(Some(ControlFlow::Break(flow))) => return Ok(flow),
             Ok(None) => return Ok(SectionFlow::Break(())),
             Err(err) => return Err(err.into()),
         }

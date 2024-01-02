@@ -5,5 +5,9 @@ edition = "2021"
 
 [dependencies]
 thiserror = { version = "1.0.50" }
+tracing = { version = "0.1.40", default-features = false, optional = true }
 
 [features]
+
+[dev-dependencies]
+test-log = { version = "0.2.14", default-features = false, features = ["trace"] }
