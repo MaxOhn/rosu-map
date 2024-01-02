@@ -162,7 +162,7 @@ impl HitSoundType {
     pub const NORMAL: u8 = 1;
     pub const WHISTLE: u8 = 2;
     pub const FINISH: u8 = 4;
-    pub const CLAP: u8 = 5;
+    pub const CLAP: u8 = 8;
 
     /// Check whether any of the given bitflags are set.
     pub const fn has_flag(self, flag: u8) -> bool {

@@ -23,7 +23,7 @@ const RENATUS: &str = include_str!("../resources/Soleily - Renatus (Gamu) [Insan
 
 #[test]
 fn format_version() {
-    let map: Beatmap = rosu_map::from_path("../resources/beatmap-version-4.osu").unwrap();
+    let map: Beatmap = rosu_map::from_path("./resources/beatmap-version-4.osu").unwrap();
 
     assert_eq!(map.format_version, 4);
     assert_eq!(map.preview_time, -1);
@@ -107,7 +107,7 @@ fn events() {
 #[test]
 fn video_lowercase_ext() {
     let events: Events =
-        rosu_map::from_path("../resources/video-with-lowercase-extension.osb").unwrap();
+        rosu_map::from_path("./resources/video-with-lowercase-extension.osb").unwrap();
 
     assert_eq!(events.background_file, "BG.jpg");
 }
@@ -115,14 +115,14 @@ fn video_lowercase_ext() {
 #[test]
 fn video_uppercase_ext() {
     let events: Events =
-        rosu_map::from_path("../resources/video-with-uppercase-extension.osb").unwrap();
+        rosu_map::from_path("./resources/video-with-uppercase-extension.osb").unwrap();
 
     assert_eq!(events.background_file, "BG.jpg");
 }
 
 #[test]
 fn image_as_video() {
-    let events: Events = rosu_map::from_path("../resources/image-specified-as-video.osb").unwrap();
+    let events: Events = rosu_map::from_path("./resources/image-specified-as-video.osb").unwrap();
 
     assert_eq!(events.background_file, "BG.jpg");
 }
@@ -256,7 +256,7 @@ fn overlapping_timing_points() {
     }
 
     let control_points: TimingPoints =
-        rosu_map::from_path("../resources/overlapping-control-points.osu").unwrap();
+        rosu_map::from_path("./resources/overlapping-control-points.osu").unwrap();
 
     assert_eq!(control_points.timing_points.len(), 4);
     assert_eq!(control_points.difficulty_points.len(), 3);
@@ -295,7 +295,7 @@ fn omit_bar_line_effect() {
     }
 
     let control_points: TimingPoints =
-        rosu_map::from_path("../resources/omit-barline-control-points.osu").unwrap();
+        rosu_map::from_path("./resources/omit-barline-control-points.osu").unwrap();
 
     assert_eq!(control_points.timing_points.len(), 6);
     assert_eq!(control_points.effect_points.len(), 0);
@@ -319,7 +319,7 @@ fn timing_point_resets_speed_multiplier() {
     }
 
     let control_points: TimingPoints =
-        rosu_map::from_path("../resources/timingpoint-speedmultiplier-reset.osu").unwrap();
+        rosu_map::from_path("./resources/timingpoint-speedmultiplier-reset.osu").unwrap();
 
     assert!((slider_velocity_at(&control_points, 0.0) - 0.5).abs() <= 0.1);
     assert!((slider_velocity_at(&control_points, 2000.0) - 1.0).abs() <= 0.1);
@@ -372,7 +372,7 @@ fn combo_offset_osu() {
         }
     }
 
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/hitobject-combo-offset.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/hitobject-combo-offset.osu")
         .unwrap()
         .hit_objects;
 
@@ -427,7 +427,7 @@ fn control_point_difficulty_change() {
     }
 
     let control_points: TimingPoints =
-        rosu_map::from_path("../resources/controlpoint-difficulty-multiplier.osu").unwrap();
+        rosu_map::from_path("./resources/controlpoint-difficulty-multiplier.osu").unwrap();
 
     assert_eq!(slider_velocity_at(&control_points, 5.0), 1.0);
     assert_eq!(slider_velocity_at(&control_points, 1000.0), 10.0);
@@ -445,7 +445,7 @@ fn control_point_custom_sample_bank() {
     }
 
     let hit_objects =
-        rosu_map::from_path::<HitObjects>("../resources/controlpoint-custom-samplebank.osu")
+        rosu_map::from_path::<HitObjects>("./resources/controlpoint-custom-samplebank.osu")
             .unwrap()
             .hit_objects;
 
@@ -463,7 +463,7 @@ fn hit_object_custom_sample_bank() {
     }
 
     let hit_objects =
-        rosu_map::from_path::<HitObjects>("../resources/hitobject-custom-samplebank.osu")
+        rosu_map::from_path::<HitObjects>("./resources/hitobject-custom-samplebank.osu")
             .unwrap()
             .hit_objects;
 
@@ -478,7 +478,7 @@ fn hit_object_file_samples() {
         assert_eq!(hit_object.samples[0].lookup_name().as_deref(), Some(name));
     }
 
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/hitobject-file-samples.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/hitobject-file-samples.osu")
         .unwrap()
         .hit_objects;
 
@@ -491,7 +491,7 @@ fn hit_object_file_samples() {
 
 #[test]
 fn slider_samples() {
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/slider-samples.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/slider-samples.osu")
         .unwrap()
         .hit_objects;
 
@@ -580,7 +580,7 @@ fn slider_samples() {
 #[test]
 fn hit_object_no_addition_bank() {
     let hit_objects: HitObjects =
-        rosu_map::from_path("../resources/hitobject-no-addition-bank.osu").unwrap();
+        rosu_map::from_path("./resources/hitobject-no-addition-bank.osu").unwrap();
 
     assert_eq!(
         hit_objects.hit_objects[0].samples[0].bank,
@@ -590,7 +590,7 @@ fn hit_object_no_addition_bank() {
 
 #[test]
 fn invalid_event_pass() {
-    let _events: Events = rosu_map::from_path("../resources/invalid-events.osu").unwrap();
+    let _events: Events = rosu_map::from_path("./resources/invalid-events.osu").unwrap();
 }
 
 #[test]
@@ -607,7 +607,7 @@ fn invalid_bank_defaults_to_normal() {
         }
     }
 
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/invalid-bank.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/invalid-bank.osu")
         .unwrap()
         .hit_objects;
 
@@ -626,7 +626,7 @@ fn invalid_bank_defaults_to_normal() {
 
 #[test]
 fn corrupted_header() {
-    let metadata: Metadata = rosu_map::from_path("../resources/corrupted-header.osu").unwrap();
+    let metadata: Metadata = rosu_map::from_path("./resources/corrupted-header.osu").unwrap();
 
     assert_eq!(metadata.title, "Beatmap with corrupted header");
     assert_eq!(metadata.creator, "Evil Hacker");
@@ -634,7 +634,7 @@ fn corrupted_header() {
 
 #[test]
 fn missing_header() {
-    let metadata: Metadata = rosu_map::from_path("../resources/missing-header.osu").unwrap();
+    let metadata: Metadata = rosu_map::from_path("./resources/missing-header.osu").unwrap();
 
     assert_eq!(metadata.title, "Beatmap with no header");
     assert_eq!(metadata.creator, "Incredibly Evil Hacker");
@@ -642,7 +642,7 @@ fn missing_header() {
 
 #[test]
 fn empty_lines_at_start() {
-    let metadata: Metadata = rosu_map::from_path("../resources/empty-lines-at-start.osu").unwrap();
+    let metadata: Metadata = rosu_map::from_path("./resources/empty-lines-at-start.osu").unwrap();
 
     assert_eq!(metadata.title, "Empty lines at start");
     assert_eq!(metadata.creator, "Edge Case Hunter");
@@ -651,7 +651,7 @@ fn empty_lines_at_start() {
 #[test]
 fn empty_lines_without_header() {
     let metadata: Metadata =
-        rosu_map::from_path("../resources/empty-line-instead-of-header.osu").unwrap();
+        rosu_map::from_path("./resources/empty-line-instead-of-header.osu").unwrap();
 
     assert_eq!(metadata.title, "The dog ate the file header");
     assert_eq!(metadata.creator, "Why does this keep happening");
@@ -660,7 +660,7 @@ fn empty_lines_without_header() {
 #[test]
 fn no_blank_after_header() {
     let metadata: Metadata =
-        rosu_map::from_path("../resources/no-empty-line-after-header.osu").unwrap();
+        rosu_map::from_path("./resources/no-empty-line-after-header.osu").unwrap();
 
     assert_eq!(
         metadata.title,
@@ -681,7 +681,7 @@ fn empty_file() {
 
 #[test]
 fn multi_segment_sliders() {
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/multi-segment-slider.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/multi-segment-slider.osu")
         .unwrap()
         .hit_objects;
 
@@ -819,7 +819,7 @@ fn multi_segment_sliders() {
 #[test]
 fn slider_len_extension_edge_case() {
     let hit_objects =
-        rosu_map::from_path::<HitObjects>("../resources/duplicate-last-position-slider.osu")
+        rosu_map::from_path::<HitObjects>("./resources/duplicate-last-position-slider.osu")
             .unwrap()
             .hit_objects;
 
@@ -836,7 +836,7 @@ fn slider_len_extension_edge_case() {
 #[test]
 fn undefined_ar_inherits_od() {
     let difficulty: Difficulty =
-        rosu_map::from_path("../resources/undefined-approach-rate.osu").unwrap();
+        rosu_map::from_path("./resources/undefined-approach-rate.osu").unwrap();
 
     assert_eq!(difficulty.approach_rate, 1.0);
     assert_eq!(difficulty.overall_difficulty, 1.0);
@@ -845,7 +845,7 @@ fn undefined_ar_inherits_od() {
 #[test]
 fn ar_before_od() {
     let difficulty: Difficulty =
-        rosu_map::from_path("../resources/approach-rate-before-overall-difficulty.osu").unwrap();
+        rosu_map::from_path("./resources/approach-rate-before-overall-difficulty.osu").unwrap();
 
     assert_eq!(difficulty.approach_rate, 9.0);
     assert_eq!(difficulty.overall_difficulty, 1.0);
@@ -854,7 +854,7 @@ fn ar_before_od() {
 #[test]
 fn ar_after_od() {
     let difficulty: Difficulty =
-        rosu_map::from_path("../resources/approach-rate-after-overall-difficulty.osu").unwrap();
+        rosu_map::from_path("./resources/approach-rate-after-overall-difficulty.osu").unwrap();
 
     assert_eq!(difficulty.approach_rate, 9.0);
     assert_eq!(difficulty.overall_difficulty, 1.0);
@@ -863,7 +863,7 @@ fn ar_after_od() {
 #[test]
 fn adjacent_implicit_catmull_segments_merged() {
     let mut hit_objects =
-        rosu_map::from_path::<HitObjects>("../resources/adjacent-catmull-segments.osu")
+        rosu_map::from_path::<HitObjects>("./resources/adjacent-catmull-segments.osu")
             .unwrap()
             .hit_objects;
 
@@ -882,11 +882,10 @@ fn adjacent_implicit_catmull_segments_merged() {
 
 #[test]
 fn duplicate_initial_catmull_point_merged() {
-    let hit_objects = rosu_map::from_path::<HitObjects>(
-        "../resources/catmull-duplicate-initial-controlpoint.osu",
-    )
-    .unwrap()
-    .hit_objects;
+    let hit_objects =
+        rosu_map::from_path::<HitObjects>("./resources/catmull-duplicate-initial-controlpoint.osu")
+            .unwrap()
+            .hit_objects;
 
     let HitObjectKind::Slider(ref slider) = hit_objects[0].kind else {
         panic!("Expected slider")
@@ -926,7 +925,7 @@ fn nan_control_points() {
     }
 
     let control_points: TimingPoints =
-        rosu_map::from_path("../resources/nan-control-points.osu").unwrap();
+        rosu_map::from_path("./resources/nan-control-points.osu").unwrap();
 
     assert_eq!(control_points.timing_points.len(), 1);
     assert_eq!(control_points.difficulty_points.len(), 2);
@@ -942,7 +941,7 @@ fn nan_control_points() {
 
 #[test]
 fn sample_point_leniency() {
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/sample-point-leniency.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/sample-point-leniency.osu")
         .unwrap()
         .hit_objects;
 
@@ -955,7 +954,7 @@ fn sample_point_leniency() {
 
 #[test]
 fn new_combo_after_break() {
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/break-between-objects.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/break-between-objects.osu")
         .unwrap()
         .hit_objects;
 
@@ -976,7 +975,7 @@ fn spinner_new_combo_between_objects() {
         }
     }
 
-    let hit_objects = rosu_map::from_path::<HitObjects>("../resources/spinner-between-objects.osu")
+    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/spinner-between-objects.osu")
         .unwrap()
         .hit_objects;
 
@@ -996,10 +995,9 @@ fn spinner_new_combo_between_objects() {
 
 #[test]
 fn slider_conversion_with_custom_dist() {
-    let mut hit_objects =
-        rosu_map::from_path::<HitObjects>("../resources/custom-slider-length.osu")
-            .unwrap()
-            .hit_objects;
+    let mut hit_objects = rosu_map::from_path::<HitObjects>("./resources/custom-slider-length.osu")
+        .unwrap()
+        .hit_objects;
 
     let first = hit_objects.first_mut().unwrap();
 

@@ -74,6 +74,7 @@ impl HitObjectsState {
                     .is_ascii_alphabetic();
 
                 if !is_letter {
+                    end_idx += 1;
                     continue;
                 }
 
@@ -171,14 +172,17 @@ impl HitObjectsState {
 
         while end_idx < self.vertices.len() - end_point_len {
             if self.vertices[end_idx].pos != self.vertices[end_idx - 1].pos {
+                end_idx += 1;
                 continue;
             }
 
             if path_type == PathType::CATMULL && end_idx > 1 {
+                end_idx += 1;
                 continue;
             }
 
             if end_idx == self.vertices.len() - end_point_len - 1 {
+                end_idx += 1;
                 continue;
             }
 
