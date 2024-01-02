@@ -273,39 +273,105 @@ impl DecodeBeatmap for Beatmap {
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         General::parse_general(&mut state.general, line)?;
+        Editor::parse_general(&mut state.editor, line)?;
+        Metadata::parse_general(&mut state.metadata, line)?;
+        Difficulty::parse_general(&mut state.difficulty, line)?;
+        Events::parse_general(&mut state.events, line)?;
         ControlPoints::parse_general(&mut state.control_points, line)?;
+        Colors::parse_general(&mut state.colors, line)?;
+        HitObjects::parse_general(&mut state.hit_objects, line)?;
 
         Ok(())
     }
 
     fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        Editor::parse_editor(&mut state.editor, line).map_err(ParseBeatmapError::Editor)
+        General::parse_editor(&mut state.general, line)?;
+        Editor::parse_editor(&mut state.editor, line)?;
+        Metadata::parse_editor(&mut state.metadata, line)?;
+        Difficulty::parse_editor(&mut state.difficulty, line)?;
+        Events::parse_editor(&mut state.events, line)?;
+        ControlPoints::parse_editor(&mut state.control_points, line)?;
+        Colors::parse_editor(&mut state.colors, line)?;
+        HitObjects::parse_editor(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 
     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        Metadata::parse_metadata(&mut state.metadata, line).map_err(ParseBeatmapError::Metadata)
+        General::parse_metadata(&mut state.general, line)?;
+        Editor::parse_metadata(&mut state.editor, line)?;
+        Metadata::parse_metadata(&mut state.metadata, line)?;
+        Difficulty::parse_metadata(&mut state.difficulty, line)?;
+        Events::parse_metadata(&mut state.events, line)?;
+        ControlPoints::parse_metadata(&mut state.control_points, line)?;
+        Colors::parse_metadata(&mut state.colors, line)?;
+        HitObjects::parse_metadata(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 
     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        Difficulty::parse_difficulty(&mut state.difficulty, line)
-            .map_err(ParseBeatmapError::Difficulty)
+        General::parse_difficulty(&mut state.general, line)?;
+        Editor::parse_difficulty(&mut state.editor, line)?;
+        Metadata::parse_difficulty(&mut state.metadata, line)?;
+        Difficulty::parse_difficulty(&mut state.difficulty, line)?;
+        Events::parse_difficulty(&mut state.events, line)?;
+        ControlPoints::parse_difficulty(&mut state.control_points, line)?;
+        Colors::parse_difficulty(&mut state.colors, line)?;
+        HitObjects::parse_difficulty(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 
     fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        Events::parse_events(&mut state.events, line).map_err(ParseBeatmapError::Events)
+        General::parse_events(&mut state.general, line)?;
+        Editor::parse_events(&mut state.editor, line)?;
+        Metadata::parse_events(&mut state.metadata, line)?;
+        Difficulty::parse_events(&mut state.difficulty, line)?;
+        Events::parse_events(&mut state.events, line)?;
+        ControlPoints::parse_events(&mut state.control_points, line)?;
+        Colors::parse_events(&mut state.colors, line)?;
+        HitObjects::parse_events(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 
     fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        ControlPoints::parse_timing_points(&mut state.control_points, line)
-            .map_err(ParseBeatmapError::TimingPoints)
+        General::parse_timing_points(&mut state.general, line)?;
+        Editor::parse_timing_points(&mut state.editor, line)?;
+        Metadata::parse_timing_points(&mut state.metadata, line)?;
+        Difficulty::parse_timing_points(&mut state.difficulty, line)?;
+        Events::parse_timing_points(&mut state.events, line)?;
+        ControlPoints::parse_timing_points(&mut state.control_points, line)?;
+        Colors::parse_timing_points(&mut state.colors, line)?;
+        HitObjects::parse_timing_points(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 
     fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        Colors::parse_colors(&mut state.colors, line).map_err(ParseBeatmapError::Colors)
+        General::parse_colors(&mut state.general, line)?;
+        Editor::parse_colors(&mut state.editor, line)?;
+        Metadata::parse_colors(&mut state.metadata, line)?;
+        Difficulty::parse_colors(&mut state.difficulty, line)?;
+        Events::parse_colors(&mut state.events, line)?;
+        ControlPoints::parse_colors(&mut state.control_points, line)?;
+        Colors::parse_colors(&mut state.colors, line)?;
+        HitObjects::parse_colors(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        HitObjects::parse_hit_objects(&mut state.hit_objects, line)
-            .map_err(ParseBeatmapError::HitOjects)
+        General::parse_hit_objects(&mut state.general, line)?;
+        Editor::parse_hit_objects(&mut state.editor, line)?;
+        Metadata::parse_hit_objects(&mut state.metadata, line)?;
+        Difficulty::parse_hit_objects(&mut state.difficulty, line)?;
+        Events::parse_hit_objects(&mut state.events, line)?;
+        ControlPoints::parse_hit_objects(&mut state.control_points, line)?;
+        Colors::parse_hit_objects(&mut state.colors, line)?;
+        HitObjects::parse_hit_objects(&mut state.hit_objects, line)?;
+
+        Ok(())
     }
 }
