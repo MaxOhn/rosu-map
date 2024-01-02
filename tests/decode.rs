@@ -344,9 +344,10 @@ fn colors() {
 
 #[test]
 fn get_last_object_time() {
-    let mut hit_objects = rosu_map::from_path::<HitObjects>("mania-last-object-not-latest.osu")
-        .unwrap()
-        .hit_objects;
+    let mut hit_objects =
+        rosu_map::from_path::<HitObjects>("./resources/mania-last-object-not-latest.osu")
+            .unwrap()
+            .hit_objects;
 
     let last_object = hit_objects.last_mut().unwrap();
 

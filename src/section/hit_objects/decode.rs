@@ -6,7 +6,7 @@ use crate::{
     section::{
         difficulty::DifficultyKey,
         events::{Events, EventsState, ParseEventsError},
-        hit_objects::slider::path_type::PathType,
+        hit_objects::{slider::path_type::PathType, CurveBuffers},
         timing_points::{
             ControlPoints, ControlPointsState, DifficultyPoint, ParseControlPointsError,
             SamplePoint, TimingPoint,
@@ -306,6 +306,7 @@ impl From<HitObjectsState> for HitObjects {
         let control_points: ControlPoints = state.control_points.into();
 
         HitObjectsState::post_process_breaks(&mut hit_objects.hit_objects, &events);
+        let mut bufs = CurveBuffers::default();
 
         for h in hit_objects.hit_objects.iter_mut() {
             if let HitObjectKind::Slider(ref mut slider) = h.kind {
@@ -328,7 +329,7 @@ impl From<HitObjectsState> for HitObjects {
                 slider.velocity = scoring_dist / beat_len;
 
                 let span_count = f64::from(slider.span_count());
-                let duration = slider.duration();
+                let duration = slider.duration_with_bufs(&mut bufs);
 
                 for i in 0..slider.node_samples.len() {
                     let time =
@@ -344,7 +345,7 @@ impl From<HitObjectsState> for HitObjects {
                 }
             }
 
-            let end_time = h.end_time();
+            let end_time = h.end_time_with_bufs(&mut bufs);
 
             let sample_point = control_points
                 .sample_point_at(end_time + CONTROL_POINT_LENIENCY)

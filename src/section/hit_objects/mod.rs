@@ -44,10 +44,26 @@ impl HitObject {
     }
 
     /// Returns the end time of the [`HitObject`].
+    ///
+    /// If the curve has not yet been accessed, it needs to be calculated
+    /// first.
+    ///
+    /// In case curves of multiple slider paths are being calculated, it is
+    /// recommended to initialize [`CurveBuffers`] and pass a mutable reference
+    /// of it to [`HitObject::end_time_with_bufs`] so the buffers are re-used
+    /// for all sliders.
     pub fn end_time(&mut self) -> f64 {
+        self.end_time_with_bufs(&mut CurveBuffers::default())
+    }
+
+    /// Returns the end time of the [`HitObject`].
+    ///
+    /// If the slider's curve has not yet been accessed, it needs to be
+    /// calculated first for which the given [`CurveBuffers`] are used.
+    pub fn end_time_with_bufs(&mut self, bufs: &mut CurveBuffers) -> f64 {
         match self.kind {
             HitObjectKind::Circle(_) => self.start_time,
-            HitObjectKind::Slider(ref mut h) => self.start_time + h.duration(),
+            HitObjectKind::Slider(ref mut h) => self.start_time + h.duration_with_bufs(bufs),
             HitObjectKind::Spinner(ref h) => self.start_time + h.duration,
             HitObjectKind::Hold(ref h) => self.start_time + h.duration,
         }

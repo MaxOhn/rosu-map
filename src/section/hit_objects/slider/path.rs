@@ -41,7 +41,8 @@ impl SliderPath {
 
     /// Returns a reference to the [`Curve`].
     ///
-    /// If the curve has not yet been accessed, it needs to be calculated first.
+    /// If the curve has not yet been accessed, it needs to be calculated
+    /// first.
     ///
     /// In case curves of multiple slider paths are being calculated, it is
     /// recommended to initialize [`CurveBuffers`] and pass a mutable reference
@@ -63,7 +64,8 @@ impl SliderPath {
 
     /// Returns a reference to the [`Curve`].
     ///
-    /// If the curve has not yet been accessed, it needs to be calculated first.
+    /// If the curve has not yet been accessed, it needs to be calculated
+    /// first.
     ///
     /// In case the curve will be accessed only once, using
     /// [`SliderPath::borrowed_curve`] should be preferred.

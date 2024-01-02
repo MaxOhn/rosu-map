@@ -127,8 +127,8 @@ impl Curve {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
 /// A curve with borrowed lists of path points and segment lengths.
+#[derive(Clone, Debug, PartialEq)]
 pub struct BorrowedCurve<'bufs> {
     path: &'bufs [Pos],
     lengths: &'bufs [f64],

@@ -2,7 +2,7 @@ use crate::util::Pos;
 
 use self::path::{PathControlPoint, SliderPath};
 
-use super::hit_samples::HitSampleInfo;
+use super::{hit_samples::HitSampleInfo, CurveBuffers};
 
 pub mod curve;
 pub mod path;
@@ -27,7 +27,24 @@ impl HitObjectSlider {
         self.repeat_count + 1
     }
 
+    /// Returns the duration of the slider.
+    ///
+    /// If the curve has not yet been accessed, it needs to be calculated
+    /// first.
+    ///
+    /// In case curves of multiple slider paths are being calculated, it is
+    /// recommended to initialize [`CurveBuffers`] and pass a mutable reference
+    /// of it to [`HitObjectSlider::duration_with_bufs`] so the buffers are
+    /// re-used for all sliders.
     pub fn duration(&mut self) -> f64 {
-        self.span_count() as f64 * self.path.curve().dist() / self.velocity
+        self.duration_with_bufs(&mut CurveBuffers::default())
+    }
+
+    /// Returns the duration of the slider.
+    ///
+    /// If the slider's curve has not yet been accessed, it needs to be
+    /// calculated first for which the given [`CurveBuffers`] are used.
+    pub fn duration_with_bufs(&mut self, bufs: &mut CurveBuffers) -> f64 {
+        self.span_count() as f64 * self.path.curve_with_bufs(bufs).dist() / self.velocity
     }
 }
