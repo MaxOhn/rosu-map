@@ -692,12 +692,17 @@ fn get_sample_bank<W: Write>(
     // we'll just take the first and assume it's the only one.
     let normal_bank = samples
         .iter()
-        .find(|sample| matches!(sample.name, Some(HitSampleInfoName::Normal)))
+        .find(|sample| sample.name == HitSampleInfo::HIT_NORMAL)
         .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| sample.bank);
 
     let add_bank = samples
         .iter()
-        .find(|sample| !matches!(sample.name, Some(HitSampleInfoName::Normal) | None))
+        .find(|sample| {
+            !matches!(
+                sample.name,
+                HitSampleInfo::HIT_NORMAL | HitSampleInfoName::File(_)
+            )
+        })
         .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| sample.bank);
 
     write!(writer, "{}:{}", normal_bank as i32, add_bank as i32)?;
@@ -708,13 +713,16 @@ fn get_sample_bank<W: Write>(
 
     let mut custom_sample_bank = samples
         .iter()
-        .find(|sample| sample.name.is_some())
+        .find(|sample| matches!(sample.name, HitSampleInfoName::Default(_)))
         .map_or(0, |sample| sample.custom_sample_bank);
 
     let sample_filename = samples
         .iter()
-        .find_map(HitSampleInfo::lookup_name)
-        .unwrap_or_default();
+        .find(|sample| match sample.name {
+            HitSampleInfoName::Default(_) => true,
+            HitSampleInfoName::File(ref filename) => !filename.is_empty(),
+        })
+        .map(HitSampleInfo::lookup_name);
 
     let mut volume = samples.first().map_or(100, |sample| sample.volume);
 
@@ -723,5 +731,11 @@ fn get_sample_bank<W: Write>(
         volume = 0;
     }
 
-    write!(writer, ":{custom_sample_bank}:{volume}:{sample_filename}")
+    write!(writer, ":{custom_sample_bank}:{volume}:")?;
+
+    if let Some(filename) = sample_filename {
+        write!(writer, "{filename}")?;
+    }
+
+    Ok(())
 }

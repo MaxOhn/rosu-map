@@ -6,7 +6,7 @@ use rosu_map::{
         events::{BreakPeriod, Events},
         general::{CountdownType, GameMode, General},
         hit_objects::{
-            hit_samples::{HitSampleInfoName, SampleBank},
+            hit_samples::{HitSampleInfo, SampleBank},
             CurveBuffers, HitObject, HitObjectKind, HitObjects, PathType,
         },
         metadata::Metadata,
@@ -395,7 +395,7 @@ fn hit_objects() {
     assert!(hit_objects[0]
         .samples
         .iter()
-        .any(|sample| sample.name == Some(HitSampleInfoName::Normal)));
+        .any(|sample| sample.name == HitSampleInfo::HIT_NORMAL));
 
     let HitObjectKind::Slider(ref slider) = hit_objects[0].kind else {
         panic!("Expected slider")
@@ -407,7 +407,7 @@ fn hit_objects() {
     assert!(hit_objects[1]
         .samples
         .iter()
-        .any(|sample| sample.name == Some(HitSampleInfoName::Clap)));
+        .any(|sample| sample.name == HitSampleInfo::HIT_CLAP));
 
     let HitObjectKind::Circle(ref circle) = hit_objects[1].kind else {
         panic!("Expected circle")
@@ -441,7 +441,7 @@ fn control_point_difficulty_change() {
 #[test]
 fn control_point_custom_sample_bank() {
     fn assert_lookup_name(hit_object: &HitObject, name: &str) {
-        assert_eq!(hit_object.samples[0].lookup_name().as_deref(), Some(name));
+        assert_eq!(hit_object.samples[0].lookup_name().to_string(), name);
     }
 
     let hit_objects =
@@ -459,7 +459,7 @@ fn control_point_custom_sample_bank() {
 #[test]
 fn hit_object_custom_sample_bank() {
     fn assert_lookup_name(hit_object: &HitObject, name: &str) {
-        assert_eq!(hit_object.samples[0].lookup_name().as_deref(), Some(name));
+        assert_eq!(hit_object.samples[0].lookup_name().to_string(), name);
     }
 
     let hit_objects =
@@ -474,8 +474,9 @@ fn hit_object_custom_sample_bank() {
 
 #[test]
 fn hit_object_file_samples() {
+    #[track_caller]
     fn assert_lookup_name(hit_object: &HitObject, name: &str) {
-        assert_eq!(hit_object.samples[0].lookup_name().as_deref(), Some(name));
+        assert_eq!(hit_object.samples[0].lookup_name().to_string(), name);
     }
 
     let hit_objects = rosu_map::from_path::<HitObjects>("./resources/hitobject-file-samples.osu")
@@ -509,72 +510,30 @@ fn slider_samples() {
     };
 
     assert_eq!(slider1.node_samples[0].len(), 1);
-    assert_eq!(
-        slider1.node_samples[0][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
+    assert_eq!(slider1.node_samples[0][0].name, HitSampleInfo::HIT_NORMAL);
     assert_eq!(slider1.node_samples[1].len(), 1);
-    assert_eq!(
-        slider1.node_samples[1][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
+    assert_eq!(slider1.node_samples[1][0].name, HitSampleInfo::HIT_NORMAL);
     assert_eq!(slider1.node_samples[2].len(), 1);
-    assert_eq!(
-        slider1.node_samples[2][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
+    assert_eq!(slider1.node_samples[2][0].name, HitSampleInfo::HIT_NORMAL);
 
     assert_eq!(slider2.node_samples[0].len(), 2);
-    assert_eq!(
-        slider2.node_samples[0][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
-    assert_eq!(
-        slider2.node_samples[0][1].name,
-        Some(HitSampleInfoName::Clap)
-    );
+    assert_eq!(slider2.node_samples[0][0].name, HitSampleInfo::HIT_NORMAL);
+    assert_eq!(slider2.node_samples[0][1].name, HitSampleInfo::HIT_CLAP);
     assert_eq!(slider2.node_samples[1].len(), 2);
-    assert_eq!(
-        slider2.node_samples[1][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
-    assert_eq!(
-        slider2.node_samples[1][1].name,
-        Some(HitSampleInfoName::Clap)
-    );
+    assert_eq!(slider2.node_samples[1][0].name, HitSampleInfo::HIT_NORMAL);
+    assert_eq!(slider2.node_samples[1][1].name, HitSampleInfo::HIT_CLAP);
     assert_eq!(slider2.node_samples[2].len(), 2);
-    assert_eq!(
-        slider2.node_samples[2][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
-    assert_eq!(
-        slider2.node_samples[2][1].name,
-        Some(HitSampleInfoName::Clap)
-    );
+    assert_eq!(slider2.node_samples[2][0].name, HitSampleInfo::HIT_NORMAL);
+    assert_eq!(slider2.node_samples[2][1].name, HitSampleInfo::HIT_CLAP);
 
     assert_eq!(slider3.node_samples[0].len(), 2);
-    assert_eq!(
-        slider3.node_samples[0][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
-    assert_eq!(
-        slider3.node_samples[0][1].name,
-        Some(HitSampleInfoName::Whistle)
-    );
+    assert_eq!(slider3.node_samples[0][0].name, HitSampleInfo::HIT_NORMAL);
+    assert_eq!(slider3.node_samples[0][1].name, HitSampleInfo::HIT_WHISTLE);
     assert_eq!(slider3.node_samples[1].len(), 1);
-    assert_eq!(
-        slider3.node_samples[1][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
+    assert_eq!(slider3.node_samples[1][0].name, HitSampleInfo::HIT_NORMAL);
     assert_eq!(slider3.node_samples[2].len(), 2);
-    assert_eq!(
-        slider3.node_samples[2][0].name,
-        Some(HitSampleInfoName::Normal)
-    );
-    assert_eq!(
-        slider3.node_samples[2][1].name,
-        Some(HitSampleInfoName::Clap)
-    );
+    assert_eq!(slider3.node_samples[2][0].name, HitSampleInfo::HIT_NORMAL);
+    assert_eq!(slider3.node_samples[2][1].name, HitSampleInfo::HIT_CLAP);
 }
 
 #[test]

@@ -9,12 +9,11 @@ use std::{
 use crate::util::{ParseNumber, ParseNumberError, StrExt};
 
 /// Info about a [`HitObject`]'s sample.
-/// 
+///
 /// [`HitObject`]: crate::section::hit_objects::HitObject
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HitSampleInfo {
-    pub name: Option<HitSampleInfoName>,
-    pub filename: Option<String>,
+    pub name: HitSampleInfoName,
     pub bank: SampleBank,
     pub suffix: Option<NonZeroU32>,
     pub volume: i32,
@@ -24,48 +23,60 @@ pub struct HitSampleInfo {
 }
 
 /// The name of a [`HitSampleInfo`].
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HitSampleInfoName {
+    Default(HitSampleDefaultName),
+    File(String),
+}
+
+/// The default names of a [`HitSampleInfo`].
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum HitSampleDefaultName {
     Normal,
     Whistle,
     Finish,
     Clap,
 }
 
-impl HitSampleInfoName {
+impl HitSampleDefaultName {
     pub const fn to_lowercase_str(self) -> &'static str {
         match self {
-            HitSampleInfoName::Normal => "hitnormal",
-            HitSampleInfoName::Whistle => "hitwhistle",
-            HitSampleInfoName::Finish => "hitfinish",
-            HitSampleInfoName::Clap => "hitclap",
+            Self::Normal => "hitnormal",
+            Self::Whistle => "hitwhistle",
+            Self::Finish => "hitfinish",
+            Self::Clap => "hitclap",
         }
     }
 }
 
-impl Display for HitSampleInfoName {
+impl Display for HitSampleDefaultName {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str(self.to_lowercase_str())
     }
 }
 
 impl HitSampleInfo {
+    pub const HIT_NORMAL: HitSampleInfoName =
+        HitSampleInfoName::Default(HitSampleDefaultName::Normal);
+    pub const HIT_WHISTLE: HitSampleInfoName =
+        HitSampleInfoName::Default(HitSampleDefaultName::Whistle);
+    pub const HIT_FINISH: HitSampleInfoName =
+        HitSampleInfoName::Default(HitSampleDefaultName::Finish);
+    pub const HIT_CLAP: HitSampleInfoName = HitSampleInfoName::Default(HitSampleDefaultName::Clap);
+
     /// Initialize a new [`HitSampleInfo`] without a filename.
     pub fn new(
-        name: Option<HitSampleInfoName>,
+        name: HitSampleInfoName,
         bank: Option<SampleBank>,
         custom_sample_bank: i32,
         volume: i32,
     ) -> Self {
         Self {
             name,
-            filename: None,
             bank: bank.unwrap_or(SampleBank::Normal),
             suffix: (custom_sample_bank >= 2)
-                .then(|| 
-                    // SAFETY: The value is guaranteed to be >= 2
-                    unsafe { NonZeroU32::new_unchecked(custom_sample_bank as u32) }
-                ),
+                // SAFETY: The value is guaranteed to be >= 2
+                .then(|| unsafe { NonZeroU32::new_unchecked(custom_sample_bank as u32) }),
             volume,
             custom_sample_bank,
             bank_specified: bank.is_some(),
@@ -73,14 +84,22 @@ impl HitSampleInfo {
         }
     }
 
-    pub fn lookup_name(&self) -> Option<String> {
-        self.name.map(|name| {
-            if let Some(ref suffix) = self.suffix {
-                format!("Gameplay/{}-{name}{suffix}", self.bank)
-            } else {
-                format!("Gameplay/{}-{name}", self.bank)
-            }
-        })
+    pub fn lookup_name(&self) -> LookupName<'_> {
+        LookupName(self)
+    }
+}
+
+pub struct LookupName<'a>(&'a HitSampleInfo);
+
+impl Display for LookupName<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self.0.name {
+            HitSampleInfoName::Default(name) => match self.0.suffix {
+                Some(ref suffix) => write!(f, "Gameplay/{}-{name}{suffix}", self.0.bank),
+                None => write!(f, "Gameplay/{}-{name}", self.0.bank),
+            },
+            HitSampleInfoName::File(ref filename) => f.write_str(filename),
+        }
     }
 }
 
@@ -176,10 +195,10 @@ impl From<&[HitSampleInfo]> for HitSoundType {
 
         for sample in samples.iter() {
             match sample.name {
-                Some(HitSampleInfoName::Whistle) => kind |= Self::WHISTLE,
-                Some(HitSampleInfoName::Finish) => kind |= Self::FINISH,
-                Some(HitSampleInfoName::Clap) => kind |= Self::CLAP,
-                Some(HitSampleInfoName::Normal) | None => {}
+                HitSampleInfo::HIT_WHISTLE => kind |= Self::WHISTLE,
+                HitSampleInfo::HIT_FINISH => kind |= Self::FINISH,
+                HitSampleInfo::HIT_CLAP => kind |= Self::CLAP,
+                HitSampleInfo::HIT_NORMAL | HitSampleInfoName::File(_) => {}
             }
         }
 
@@ -234,7 +253,7 @@ impl BitAndAssign<u8> for HitSoundType {
 
 /// Sample info of a [`HitObject`] to convert [`HitSoundType`] into a [`Vec`]
 /// of [`HitSampleInfo`].
-/// 
+///
 /// [`HitObject`]: crate::section::hit_objects::HitObject
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SampleBankInfo {
@@ -287,14 +306,16 @@ impl SampleBankInfo {
     pub fn convert_sound_type(self, sound_type: HitSoundType) -> Vec<HitSampleInfo> {
         let mut sound_types = Vec::new();
 
-        if self.filename.as_ref().is_some_and(|s| !s.is_empty()) {
-            sound_types.push(HitSampleInfo {
-                filename: self.filename,
-                ..HitSampleInfo::new(None, None, 1, self.volume)
-            });
+        if let Some(filename) = self.filename.filter(|filename| !filename.is_empty()) {
+            sound_types.push(HitSampleInfo::new(
+                HitSampleInfoName::File(filename),
+                None,
+                1,
+                self.volume,
+            ));
         } else {
             let mut sample = HitSampleInfo::new(
-                Some(HitSampleInfoName::Normal),
+                HitSampleInfo::HIT_NORMAL,
                 self.bank_for_normal,
                 self.custom_sample_bank,
                 self.volume,
@@ -308,7 +329,7 @@ impl SampleBankInfo {
 
         if sound_type.has_flag(HitSoundType::FINISH) {
             sound_types.push(HitSampleInfo::new(
-                Some(HitSampleInfoName::Finish),
+                HitSampleInfo::HIT_FINISH,
                 self.bank_for_addition,
                 self.custom_sample_bank,
                 self.volume,
@@ -317,7 +338,7 @@ impl SampleBankInfo {
 
         if sound_type.has_flag(HitSoundType::WHISTLE) {
             sound_types.push(HitSampleInfo::new(
-                Some(HitSampleInfoName::Whistle),
+                HitSampleInfo::HIT_WHISTLE,
                 self.bank_for_addition,
                 self.custom_sample_bank,
                 self.volume,
@@ -326,7 +347,7 @@ impl SampleBankInfo {
 
         if sound_type.has_flag(HitSoundType::CLAP) {
             sound_types.push(HitSampleInfo::new(
-                Some(HitSampleInfoName::Clap),
+                HitSampleInfo::HIT_CLAP,
                 self.bank_for_addition,
                 self.custom_sample_bank,
                 self.volume,

@@ -3,7 +3,11 @@ use std::{cmp, slice};
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     reader::DecoderError,
-    section::hit_objects::slider::path_type::PathType,
+    section::{
+        events::{Events, EventsState, ParseEventsError},
+        hit_objects::slider::path_type::PathType,
+        timing_points::{ControlPoints, ControlPointsState, ParseControlPointsError, SamplePoint},
+    },
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
     {FormatVersion, ParseVersionError},
 };
@@ -27,6 +31,8 @@ pub enum ParseHitObjectsError {
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
+    #[error("failed to parse events section")]
+    Events(#[from] ParseEventsError),
     #[error("failed to parse hit object type")]
     HitObjectType(#[from] ParseHitObjectTypeError),
     #[error("failed to parse hit sound type")]
@@ -39,6 +45,8 @@ pub enum ParseHitObjectsError {
     Number(#[from] ParseNumberError),
     #[error("invalid sample bank")]
     SampleBankInfo(#[from] ParseSampleBankInfoError),
+    #[error("failed to parse timing points section")]
+    TimingPoints(#[from] ParseControlPointsError),
     #[error("unknown hit object type")]
     UnknownHitObjectType(HitObjectType),
 }
@@ -51,6 +59,10 @@ pub struct HitObjectsState {
     curve_points: Vec<PathControlPoint>,
     vertices: Vec<PathControlPoint>,
     point_split: Vec<*const str>,
+    // TODO: decoding HitObjects for Beatmap currently parses events & control
+    // points twice which is not ideal
+    events: EventsState,
+    control_points: ControlPointsState,
     hit_objects: HitObjects,
 }
 
@@ -233,6 +245,29 @@ impl HitObjectsState {
 
         res
     }
+
+    fn post_process_breaks(hit_objects: &mut [HitObject], events: &Events) {
+        let mut curr_break = 0;
+        let mut force_new_combo = false;
+
+        for h in hit_objects.iter_mut() {
+            while curr_break < events.breaks.len()
+                && events.breaks[curr_break].end_time < h.start_time
+            {
+                force_new_combo = true;
+                curr_break += 1;
+            }
+
+            match h.kind {
+                HitObjectKind::Circle(ref mut h) => h.new_combo |= force_new_combo,
+                HitObjectKind::Slider(ref mut h) => h.new_combo |= force_new_combo,
+                HitObjectKind::Spinner(ref mut h) => h.new_combo |= force_new_combo,
+                HitObjectKind::Hold(_) => {}
+            }
+
+            force_new_combo = false;
+        }
+    }
 }
 
 impl DecodeState for HitObjectsState {
@@ -244,6 +279,8 @@ impl DecodeState for HitObjectsState {
             curve_points: Vec::new(),
             vertices: Vec::new(),
             point_split: Vec::new(),
+            events: EventsState::create(version),
+            control_points: ControlPointsState::create(version),
             hit_objects: HitObjects::default(),
         }
     }
@@ -251,7 +288,51 @@ impl DecodeState for HitObjectsState {
 
 impl From<HitObjectsState> for HitObjects {
     fn from(state: HitObjectsState) -> Self {
-        state.hit_objects
+        const CONTROL_POINT_LENIENCY: f64 = 5.0;
+
+        let mut hit_objects = state.hit_objects;
+
+        hit_objects
+            .hit_objects
+            .sort_by(|a, b| a.start_time.total_cmp(&b.start_time));
+
+        let events: Events = state.events.into();
+        let control_points: ControlPoints = state.control_points.into();
+
+        HitObjectsState::post_process_breaks(&mut hit_objects.hit_objects, &events);
+
+        for h in hit_objects.hit_objects.iter_mut() {
+            let end_time = h.end_time();
+
+            let sample_point = control_points
+                .sample_point_at(end_time + CONTROL_POINT_LENIENCY)
+                .map_or_else(SamplePoint::default, SamplePoint::clone);
+
+            for sample in h.samples.iter_mut() {
+                sample_point.apply(sample);
+            }
+
+            if let HitObjectKind::Slider(ref mut slider) = h.kind {
+                let span_count = slider.span_count() as f64;
+
+                for i in 0..slider.node_samples.len() {
+                    let duration = end_time - h.start_time;
+
+                    let time =
+                        h.start_time + i as f64 * duration / span_count + CONTROL_POINT_LENIENCY;
+
+                    let node_sample_point = control_points
+                        .sample_point_at(time)
+                        .map_or_else(SamplePoint::default, SamplePoint::clone);
+
+                    for sample in slider.node_samples[i].iter_mut() {
+                        node_sample_point.apply(sample);
+                    }
+                }
+            }
+        }
+
+        hit_objects
     }
 }
 
@@ -261,37 +342,61 @@ impl DecodeBeatmap for HitObjects {
     type Error = ParseHitObjectsError;
     type State = HitObjectsState;
 
-    fn parse_general(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_general(&mut state.events, line)?;
+        ControlPoints::parse_general(&mut state.control_points, line)?;
+
         Ok(())
     }
 
-    fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_editor(&mut state.events, line)?;
+        ControlPoints::parse_editor(&mut state.control_points, line)?;
+
         Ok(())
     }
 
-    fn parse_metadata(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_metadata(&mut state.events, line)?;
+        ControlPoints::parse_metadata(&mut state.control_points, line)?;
+
         Ok(())
     }
 
-    fn parse_difficulty(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_difficulty(&mut state.events, line)?;
+        ControlPoints::parse_difficulty(&mut state.control_points, line)?;
+
         Ok(())
     }
 
-    fn parse_events(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_events(&mut state.events, line)?;
+        ControlPoints::parse_events(&mut state.control_points, line)?;
+
         Ok(())
     }
 
-    fn parse_timing_points(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_timing_points(&mut state.events, line)?;
+        ControlPoints::parse_timing_points(&mut state.control_points, line)?;
+
         Ok(())
     }
 
-    fn parse_colors(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+    fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_colors(&mut state.events, line)?;
+        ControlPoints::parse_colors(&mut state.control_points, line)?;
+
         Ok(())
     }
 
     // It's preferred to keep the code in-sync with osu!lazer without refactoring.
     #[allow(clippy::too_many_lines)]
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+        Events::parse_hit_objects(&mut state.events, line)?;
+        ControlPoints::parse_hit_objects(&mut state.control_points, line)?;
+
         let offset = f64::from(state.version.offset());
 
         let mut split = line.trim_comment().split(',');

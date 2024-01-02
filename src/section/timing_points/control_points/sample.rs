@@ -1,6 +1,6 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::section::hit_objects::hit_samples::SampleBank;
+use crate::section::hit_objects::hit_samples::{HitSampleInfo, SampleBank};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SamplePoint {
@@ -33,6 +33,27 @@ impl SamplePoint {
         self.sample_bank == existing.sample_bank
             && self.sample_volume == existing.sample_volume
             && self.custom_sample_bank == existing.custom_sample_bank
+    }
+
+    pub fn apply(&self, sample: &mut HitSampleInfo) {
+        if sample.custom_sample_bank == 0 {
+            sample.custom_sample_bank = self.custom_sample_bank;
+
+            if sample.custom_sample_bank >= 2 {
+                // SAFETY: The value is guaranteed to be >= 2
+                sample.suffix =
+                    Some(unsafe { NonZeroU32::new_unchecked(sample.custom_sample_bank as u32) });
+            }
+        }
+
+        if sample.volume == 0 {
+            sample.volume = self.sample_volume;
+        }
+
+        if !sample.bank_specified {
+            sample.bank = self.sample_bank;
+            sample.bank_specified = true;
+        }
     }
 }
 
