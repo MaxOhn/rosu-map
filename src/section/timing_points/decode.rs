@@ -234,7 +234,7 @@ impl Pending for SamplePoint {
 
 impl ControlPointsState {
     fn add_control_point<P: Pending>(&mut self, time: f64, point: P, timing_change: bool) {
-        if time != self.pending_control_points_time {
+        if (time - self.pending_control_points_time).abs() >= f64::EPSILON {
             self.flush_pending_points();
         }
 
@@ -401,7 +401,7 @@ impl DecodeBeatmap for ControlPoints {
             }
 
             let timing = TimingPoint::new(time, beat_len, omit_first_bar_signature, time_signature);
-            state.add_control_point(time, timing, timing_change)
+            state.add_control_point(time, timing, timing_change);
         }
 
         let difficulty = DifficultyPoint::new(time, beat_len, speed_multiplier);

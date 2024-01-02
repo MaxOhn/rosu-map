@@ -394,11 +394,8 @@ impl DecodeBeatmap for HitObjects {
             return Ok(());
         };
 
-        match key {
-            DifficultyKey::SliderMultiplier => {
-                state.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6);
-            }
-            _ => {}
+        if let DifficultyKey::SliderMultiplier = key {
+            state.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6);
         }
 
         Ok(())

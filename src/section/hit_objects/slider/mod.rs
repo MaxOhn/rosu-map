@@ -45,6 +45,6 @@ impl HitObjectSlider {
     /// If the slider's curve has not yet been accessed, it needs to be
     /// calculated first for which the given [`CurveBuffers`] are used.
     pub fn duration_with_bufs(&mut self, bufs: &mut CurveBuffers) -> f64 {
-        self.span_count() as f64 * self.path.curve_with_bufs(bufs).dist() / self.velocity
+        f64::from(self.span_count()) * self.path.curve_with_bufs(bufs).dist() / self.velocity
     }
 }

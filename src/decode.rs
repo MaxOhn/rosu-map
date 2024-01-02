@@ -204,11 +204,12 @@ pub trait DecodeBeatmap: Sized {
 
         let (version, use_curr_line) = match FormatVersion::parse(&mut reader) {
             Ok(version) => (version, false),
-            Err(_err) => {
+            #[allow(unused)]
+            Err(err) => {
                 #[cfg(feature = "tracing")]
                 {
-                    tracing::error!("Failed to parse format version: {_err}");
-                    log_error_cause(&_err);
+                    tracing::error!("Failed to parse format version: {err}");
+                    log_error_cause(&err);
                 }
 
                 (FormatVersion::default(), true)
@@ -340,10 +341,11 @@ where
             return ControlFlow::Break(SectionFlow::Continue(next));
         }
 
-        let _res = f(state, line);
+        #[allow(unused)]
+        let res = f(state, line);
 
         #[cfg(feature = "tracing")]
-        if let Err(err) = _res {
+        if let Err(err) = res {
             tracing::error!("Failed to process line {line:?}: {err}");
             log_error_cause(&err);
         }

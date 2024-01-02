@@ -28,6 +28,7 @@ pub struct General {
 }
 
 impl Default for General {
+    #[allow(clippy::default_trait_access)]
     fn default() -> Self {
         Self {
             audio_file: Default::default(),

@@ -84,7 +84,7 @@ impl HitSampleInfo {
         }
     }
 
-    pub fn lookup_name(&self) -> LookupName<'_> {
+    pub const fn lookup_name(&self) -> LookupName<'_> {
         LookupName(self)
     }
 }

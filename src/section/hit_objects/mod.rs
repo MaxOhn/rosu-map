@@ -39,7 +39,7 @@ pub struct HitObject {
 
 impl HitObject {
     /// Whether the [`HitObject`] starts a new combo.
-    pub fn new_combo(&self) -> bool {
+    pub const fn new_combo(&self) -> bool {
         self.kind.new_combo()
     }
 
@@ -81,7 +81,7 @@ pub enum HitObjectKind {
 
 impl HitObjectKind {
     /// Whether the [`HitObjectKind`] starts a new combo.
-    pub fn new_combo(&self) -> bool {
+    pub const fn new_combo(&self) -> bool {
         match self {
             HitObjectKind::Circle(h) => h.new_combo,
             HitObjectKind::Slider(h) => h.new_combo,

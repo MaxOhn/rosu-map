@@ -20,7 +20,8 @@ impl EffectPoint {
     }
 
     pub fn is_redundant(&self, existing: &Self) -> bool {
-        self.kiai == existing.kiai && self.scroll_speed == existing.scroll_speed
+        self.kiai == existing.kiai
+            && (self.scroll_speed - existing.scroll_speed).abs() < f64::EPSILON
     }
 }
 

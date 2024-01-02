@@ -30,7 +30,7 @@ impl DifficultyPoint {
 
     pub fn is_redundant(&self, existing: &Self) -> bool {
         self.generate_ticks == existing.generate_ticks
-            && self.slider_velocity == existing.slider_velocity
+            && (self.slider_velocity - existing.slider_velocity).abs() < f64::EPSILON
     }
 }
 
