@@ -18,6 +18,10 @@ impl<R: BufRead> Reader<R> {
         Decoder::new(inner).map(|decoder| Self { decoder })
     }
 
+    pub fn curr_line(&mut self) -> Result<&str, DecoderError> {
+        self.decoder.curr_line()
+    }
+
     pub fn next_line<F, O>(&mut self, f: F) -> Result<Option<O>, DecoderError>
     where
         F: FnOnce(&str) -> O,

@@ -26,11 +26,7 @@ impl Encoding {
     /// Decodes the given `src` and returns it as a `&str`.
     ///
     /// In case of UTF-16, the result will be stored in `dst`.
-    pub fn decode<'a>(
-        self,
-        src: &'a mut [u8],
-        dst: &'a mut String,
-    ) -> Result<&'a str, DecoderError> {
+    pub fn decode<'a>(self, src: &'a [u8], dst: &'a mut String) -> Result<&'a str, DecoderError> {
         match self {
             Encoding::Utf8 => Ok(str_from_utf8(src)?),
             Encoding::Utf16LE => Self::decode_utf16(U16LeIterator::new(src)?, dst),

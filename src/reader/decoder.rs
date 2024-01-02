@@ -61,9 +61,12 @@ impl<R: BufRead> Decoder<R> {
             self.read_buf.push(byte);
         }
 
+        self.curr_line().map(Some)
+    }
+
+    pub fn curr_line(&mut self) -> Result<&str, DecoderError> {
         self.encoding
-            .decode(&mut self.read_buf, &mut self.decode_buf)
+            .decode(&self.read_buf, &mut self.decode_buf)
             .map(str::trim)
-            .map(Some)
     }
 }

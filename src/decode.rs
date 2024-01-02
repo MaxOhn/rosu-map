@@ -202,8 +202,8 @@ pub trait DecodeBeatmap: Sized {
     fn decode<R: BufRead>(src: R) -> Result<Self, Self::Error> {
         let mut reader = Reader::new(src)?;
 
-        let version = match FormatVersion::parse(&mut reader) {
-            Ok(version) => version,
+        let (version, use_curr_line) = match FormatVersion::parse(&mut reader) {
+            Ok(version) => (version, false),
             Err(_err) => {
                 #[cfg(feature = "tracing")]
                 {
@@ -211,13 +211,13 @@ pub trait DecodeBeatmap: Sized {
                     log_error_cause(&_err);
                 }
 
-                FormatVersion::default()
+                (FormatVersion::default(), true)
             }
         };
 
         let mut state = Self::State::create(version);
 
-        let Some(mut section) = parse_first_section(&mut reader)? else {
+        let Some(mut section) = parse_first_section(&mut reader, use_curr_line)? else {
             return Ok(state.into());
         };
 
@@ -307,7 +307,14 @@ pub trait DecodeBeatmap: Sized {
 
 fn parse_first_section<R: BufRead>(
     reader: &mut Reader<R>,
+    use_curr_line: bool,
 ) -> Result<Option<Section>, DecoderError> {
+    if use_curr_line {
+        if let res @ (Ok(Some(_)) | Err(_)) = reader.curr_line().map(Section::try_from_line) {
+            return res;
+        }
+    }
+
     loop {
         match reader.next_line(Section::try_from_line) {
             Ok(Some(Some(section))) => return Ok(Some(section)),
