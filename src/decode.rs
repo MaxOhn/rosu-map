@@ -202,7 +202,19 @@ pub trait DecodeBeatmap: Sized {
     fn decode<R: BufRead>(src: R) -> Result<Self, Self::Error> {
         let mut reader = Reader::new(src)?;
 
-        let version = FormatVersion::parse(&mut reader)?;
+        let version = match FormatVersion::parse(&mut reader) {
+            Ok(version) => version,
+            Err(_err) => {
+                #[cfg(feature = "tracing")]
+                {
+                    tracing::error!("Failed to parse format version: {_err}");
+                    log_error_cause(&_err);
+                }
+
+                FormatVersion::default()
+            }
+        };
+
         let mut state = Self::State::create(version);
 
         let Some(mut section) = parse_first_section(&mut reader)? else {
@@ -326,12 +338,7 @@ where
         #[cfg(feature = "tracing")]
         if let Err(err) = _res {
             tracing::error!("Failed to process line {line:?}: {err}");
-            let mut err = &err as &dyn Error;
-
-            while let Some(src) = err.source() {
-                tracing::error!("  - caused by: {src}");
-                err = src;
-            }
+            log_error_cause(&err);
         }
 
         ControlFlow::Continue(())
@@ -344,5 +351,13 @@ where
             Ok(None) => return Ok(SectionFlow::Break(())),
             Err(err) => return Err(err.into()),
         }
+    }
+}
+
+#[cfg(feature = "tracing")]
+fn log_error_cause(mut err: &dyn Error) {
+    while let Some(src) = err.source() {
+        tracing::error!("  - caused by: {src}");
+        err = src;
     }
 }

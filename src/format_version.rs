@@ -8,7 +8,7 @@ use crate::{
 const VERSION_PREFIX: &str = "osu file format v";
 
 /// The version format of an `.osu` file's content.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FormatVersion(pub i32);
 
 impl FormatVersion {
@@ -52,6 +52,12 @@ impl FormatVersion {
         } else {
             0
         }
+    }
+}
+
+impl Default for FormatVersion {
+    fn default() -> Self {
+        Self(Self::LATEST)
     }
 }
 
