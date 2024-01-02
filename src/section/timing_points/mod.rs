@@ -1,7 +1,5 @@
 use std::{num::ParseIntError, str::FromStr};
 
-use crate::util::SortedVec;
-
 pub use self::{
     control_points::{
         difficulty::DifficultyPoint,
@@ -9,42 +7,11 @@ pub use self::{
         sample::SamplePoint,
         timing::{TimeSignature, TimeSignatureError, TimingPoint},
     },
-    decode::{ParseTimingPointsError, TimingPoints, TimingPointsState},
+    decode::{ControlPoints, ControlPointsState, ParseControlPointsError},
 };
 
 mod control_points;
 mod decode;
-
-/// Finds the [`DifficultyPoint`] that is active at the given time.
-pub fn difficulty_point_at(
-    difficulty_points: &SortedVec<DifficultyPoint>,
-    time: f64,
-) -> Option<&DifficultyPoint> {
-    difficulty_points
-        .binary_search_by(|probe| probe.time.total_cmp(&time))
-        .map_or(None, |i| Some(&difficulty_points[i]))
-}
-
-/// Finds the [`EffectPoint`] that is active at the given time.
-pub fn effect_point_at(effect_points: &SortedVec<EffectPoint>, time: f64) -> Option<&EffectPoint> {
-    effect_points
-        .binary_search_by(|probe| probe.time.total_cmp(&time))
-        .map_or(None, |i| Some(&effect_points[i]))
-}
-
-/// Finds the [`SamplePoint`] that is active at the given time.
-pub fn sample_point_at(sample_points: &SortedVec<SamplePoint>, time: f64) -> Option<&SamplePoint> {
-    sample_points
-        .binary_search_by(|probe| probe.time.total_cmp(&time))
-        .map_or_else(|_| sample_points.get(0), |i| Some(&sample_points[i]))
-}
-
-/// Finds the [`TimingPoint`] that is active at the given time.
-pub fn timing_point_at(timing_points: &SortedVec<TimingPoint>, time: f64) -> Option<&TimingPoint> {
-    timing_points
-        .binary_search_by(|probe| probe.time.total_cmp(&time))
-        .map_or_else(|_| timing_points.get(0), |i| Some(&timing_points[i]))
-}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EffectFlags(u8);

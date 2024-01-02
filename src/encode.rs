@@ -153,6 +153,7 @@ impl Beatmap {
         )?;
 
         let sample_set = self
+            .control_points
             .sample_points
             .first()
             .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample_point| {
@@ -334,6 +335,7 @@ impl Beatmap {
 
     fn encode_timing_points<W: Write>(&self, writer: &mut W) -> IoResult<()> {
         let mut groups: Vec<_> = self
+            .control_points
             .sample_points
             .iter()
             .map(ControlPointGroup::from)
@@ -341,21 +343,21 @@ impl Beatmap {
 
         groups.sort_unstable_by(|a, b| a.time.total_cmp(&b.time));
 
-        for effect in self.effect_points.iter() {
+        for effect in self.control_points.effect_points.iter() {
             match groups.binary_search_by(|probe| probe.time.total_cmp(&effect.time)) {
                 Ok(i) => groups[i].effect = Some(effect),
                 Err(i) => groups.insert(i, ControlPointGroup::from(effect)),
             }
         }
 
-        for timing in self.timing_points.iter() {
+        for timing in self.control_points.timing_points.iter() {
             match groups.binary_search_by(|probe| probe.time.total_cmp(&timing.time)) {
                 Ok(i) => groups[i].control = ControlPoint::Timing(timing),
                 Err(i) => groups.insert(i, ControlPointGroup::from(timing)),
             }
         }
 
-        for difficulty in self.difficulty_points.iter() {
+        for difficulty in self.control_points.difficulty_points.iter() {
             match groups.binary_search_by(|probe| probe.time.total_cmp(&difficulty.time)) {
                 Ok(i) => groups[i].control = ControlPoint::Difficulty(difficulty),
                 Err(i) => groups.insert(i, ControlPointGroup::from(difficulty)),

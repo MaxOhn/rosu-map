@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{section::hit_objects::hit_samples::SampleBank, util::Sortable};
+use crate::section::hit_objects::hit_samples::SampleBank;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SamplePoint {
@@ -28,6 +28,12 @@ impl SamplePoint {
             custom_sample_bank,
         }
     }
+
+    pub fn is_redundant(&self, existing: &Self) -> bool {
+        self.sample_bank == existing.sample_bank
+            && self.sample_volume == existing.sample_volume
+            && self.custom_sample_bank == existing.custom_sample_bank
+    }
 }
 
 impl Default for SamplePoint {
@@ -43,12 +49,6 @@ impl Default for SamplePoint {
 
 impl PartialOrd for SamplePoint {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(<Self as Sortable>::cmp(self, other))
-    }
-}
-
-impl Sortable for SamplePoint {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.time.total_cmp(&other.time)
+        self.time.partial_cmp(&other.time)
     }
 }

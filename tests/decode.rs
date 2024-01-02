@@ -12,7 +12,7 @@ use rosu_map::{
         },
         metadata::Metadata,
         timing_points::{
-            DifficultyPoint, EffectPoint, SamplePoint, TimeSignature, TimingPoint, TimingPoints,
+            ControlPoints, DifficultyPoint, EffectPoint, SamplePoint, TimeSignature, TimingPoint,
         },
     },
     util::Pos,
@@ -130,7 +130,7 @@ fn image_as_video() {
 
 #[test]
 fn timing_points() {
-    let control_points: TimingPoints = rosu_map::from_str(RENATUS).unwrap();
+    let control_points: ControlPoints = rosu_map::from_str(RENATUS).unwrap();
 
     assert_eq!(control_points.timing_points.len(), 4);
     assert_eq!(control_points.difficulty_points.len(), 5);
@@ -230,7 +230,7 @@ fn timing_points() {
 
 #[test]
 fn overlapping_timing_points() {
-    fn slider_velocity_at(control_points: &TimingPoints, time: f64) -> f64 {
+    fn slider_velocity_at(control_points: &ControlPoints, time: f64) -> f64 {
         control_points
             .difficulty_point_at(time)
             .map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
@@ -238,25 +238,25 @@ fn overlapping_timing_points() {
             })
     }
 
-    fn kiai_at(control_points: &TimingPoints, time: f64) -> bool {
+    fn kiai_at(control_points: &ControlPoints, time: f64) -> bool {
         control_points
             .effect_point_at(time)
             .map_or(EffectPoint::DEFAULT_KIAI, |point| point.kiai)
     }
 
-    fn sample_bank_at(control_points: &TimingPoints, time: f64) -> SampleBank {
+    fn sample_bank_at(control_points: &ControlPoints, time: f64) -> SampleBank {
         control_points
             .sample_point_at(time)
             .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |point| point.sample_bank)
     }
 
-    fn beat_len_at(control_points: &TimingPoints, time: f64) -> f64 {
+    fn beat_len_at(control_points: &ControlPoints, time: f64) -> f64 {
         control_points
             .timing_point_at(time)
             .map_or(TimingPoint::DEFAULT_BEAT_LEN, |point| point.beat_len)
     }
 
-    let control_points: TimingPoints =
+    let control_points: ControlPoints =
         rosu_map::from_path("./resources/overlapping-control-points.osu").unwrap();
 
     assert_eq!(control_points.timing_points.len(), 4);
@@ -287,7 +287,7 @@ fn overlapping_timing_points() {
 
 #[test]
 fn omit_bar_line_effect() {
-    fn omit_first_bar_line_at(control_points: &TimingPoints, time: f64) -> bool {
+    fn omit_first_bar_line_at(control_points: &ControlPoints, time: f64) -> bool {
         control_points
             .timing_point_at(time)
             .map_or(TimingPoint::DEFAULT_OMIT_FIRST_BAR_LINE, |point| {
@@ -295,7 +295,7 @@ fn omit_bar_line_effect() {
             })
     }
 
-    let control_points: TimingPoints =
+    let control_points: ControlPoints =
         rosu_map::from_path("./resources/omit-barline-control-points.osu").unwrap();
 
     assert_eq!(control_points.timing_points.len(), 6);
@@ -311,7 +311,7 @@ fn omit_bar_line_effect() {
 
 #[test]
 fn timing_point_resets_speed_multiplier() {
-    fn slider_velocity_at(control_points: &TimingPoints, time: f64) -> f64 {
+    fn slider_velocity_at(control_points: &ControlPoints, time: f64) -> f64 {
         control_points
             .difficulty_point_at(time)
             .map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
@@ -319,7 +319,7 @@ fn timing_point_resets_speed_multiplier() {
             })
     }
 
-    let control_points: TimingPoints =
+    let control_points: ControlPoints =
         rosu_map::from_path("./resources/timingpoint-speedmultiplier-reset.osu").unwrap();
 
     assert!((slider_velocity_at(&control_points, 0.0) - 0.5).abs() <= 0.1);
@@ -419,7 +419,7 @@ fn hit_objects() {
 
 #[test]
 fn control_point_difficulty_change() {
-    fn slider_velocity_at(control_points: &TimingPoints, time: f64) -> f64 {
+    fn slider_velocity_at(control_points: &ControlPoints, time: f64) -> f64 {
         control_points
             .difficulty_point_at(time)
             .map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
@@ -427,7 +427,7 @@ fn control_point_difficulty_change() {
             })
     }
 
-    let control_points: TimingPoints =
+    let control_points: ControlPoints =
         rosu_map::from_path("./resources/controlpoint-difficulty-multiplier.osu").unwrap();
 
     assert_eq!(slider_velocity_at(&control_points, 5.0), 1.0);
@@ -903,13 +903,13 @@ fn duplicate_initial_catmull_point_merged() {
 
 #[test]
 fn nan_control_points() {
-    fn beat_len_at(control_points: &TimingPoints, time: f64) -> f64 {
+    fn beat_len_at(control_points: &ControlPoints, time: f64) -> f64 {
         control_points
             .timing_point_at(time)
             .map_or(TimingPoint::DEFAULT_BEAT_LEN, |point| point.beat_len)
     }
 
-    fn slider_velocity_at(control_points: &TimingPoints, time: f64) -> f64 {
+    fn slider_velocity_at(control_points: &ControlPoints, time: f64) -> f64 {
         control_points
             .difficulty_point_at(time)
             .map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
@@ -917,7 +917,7 @@ fn nan_control_points() {
             })
     }
 
-    fn generate_ticks_at(control_points: &TimingPoints, time: f64) -> bool {
+    fn generate_ticks_at(control_points: &ControlPoints, time: f64) -> bool {
         control_points
             .difficulty_point_at(time)
             .map_or(DifficultyPoint::DEFAULT_GENERATE_TICKS, |point| {
@@ -925,7 +925,7 @@ fn nan_control_points() {
             })
     }
 
-    let control_points: TimingPoints =
+    let control_points: ControlPoints =
         rosu_map::from_path("./resources/nan-control-points.osu").unwrap();
 
     assert_eq!(control_points.timing_points.len(), 1);

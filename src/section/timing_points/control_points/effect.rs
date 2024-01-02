@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
 
-use crate::util::Sortable;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct EffectPoint {
     pub time: f64,
@@ -20,6 +18,10 @@ impl EffectPoint {
             scroll_speed: Self::DEFAULT_SCROLL_SPEED,
         }
     }
+
+    pub fn is_redundant(&self, existing: &Self) -> bool {
+        self.kiai == existing.kiai && self.scroll_speed == existing.scroll_speed
+    }
 }
 
 impl Default for EffectPoint {
@@ -34,12 +36,6 @@ impl Default for EffectPoint {
 
 impl PartialOrd for EffectPoint {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(<Self as Sortable>::cmp(self, other))
-    }
-}
-
-impl Sortable for EffectPoint {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.time.total_cmp(&other.time)
+        self.time.partial_cmp(&other.time)
     }
 }

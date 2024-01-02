@@ -1,7 +1,5 @@
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::util::Sortable;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct TimingPoint {
     pub time: f64,
@@ -43,13 +41,7 @@ impl Default for TimingPoint {
 
 impl PartialOrd for TimingPoint {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(<Self as Sortable>::cmp(self, other))
-    }
-}
-
-impl Sortable for TimingPoint {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.time.total_cmp(&other.time)
+        self.time.partial_cmp(&other.time)
     }
 }
 
@@ -96,5 +88,5 @@ impl TryFrom<i32> for TimeSignature {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid time signature")]
+#[error("invalid time signature, must be positive integer")]
 pub struct TimeSignatureError;

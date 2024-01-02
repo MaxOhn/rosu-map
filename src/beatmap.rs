@@ -11,13 +11,8 @@ use crate::{
         general::{CountdownType, GameMode, General, GeneralState, ParseGeneralError},
         hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError},
         metadata::{Metadata, MetadataState, ParseMetadataError},
-        timing_points::{
-            difficulty_point_at, effect_point_at, sample_point_at, timing_point_at,
-            DifficultyPoint, EffectPoint, ParseTimingPointsError, SamplePoint, TimingPoint,
-            TimingPoints, TimingPointsState,
-        },
+        timing_points::{ControlPoints, ControlPointsState, ParseControlPointsError},
     },
-    util::SortedVec,
     FormatVersion, ParseVersionError,
 };
 
@@ -72,10 +67,7 @@ pub struct Beatmap {
     pub breaks: Vec<BreakPeriod>,
 
     // TimingPoints
-    pub timing_points: SortedVec<TimingPoint>,
-    pub difficulty_points: SortedVec<DifficultyPoint>,
-    pub effect_points: SortedVec<EffectPoint>,
-    pub sample_points: SortedVec<SamplePoint>,
+    pub control_points: ControlPoints,
 
     // Colors
     pub custom_combo_colors: Vec<Color>,
@@ -95,26 +87,6 @@ impl Beatmap {
     /// slice of bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ParseBeatmapError> {
         crate::from_bytes(bytes)
-    }
-
-    /// Finds the [`DifficultyPoint`] that is active at the given time.
-    pub fn difficulty_point_at(&self, time: f64) -> Option<&DifficultyPoint> {
-        difficulty_point_at(&self.difficulty_points, time)
-    }
-
-    /// Finds the [`EffectPoint`] that is active at the given time.
-    pub fn effect_point_at(&self, time: f64) -> Option<&EffectPoint> {
-        effect_point_at(&self.effect_points, time)
-    }
-
-    /// Finds the [`SamplePoint`] that is active at the given time.
-    pub fn sample_point_at(&self, time: f64) -> Option<&SamplePoint> {
-        sample_point_at(&self.sample_points, time)
-    }
-
-    /// Finds the [`TimingPoint`] that is active at the given time.
-    pub fn timing_point_at(&self, time: f64) -> Option<&TimingPoint> {
-        timing_point_at(&self.timing_points, time)
     }
 }
 
@@ -167,10 +139,7 @@ impl Default for Beatmap {
             slider_tick_rate: Default::default(),
             background_file: Default::default(),
             breaks: Default::default(),
-            timing_points: Default::default(),
-            difficulty_points: Default::default(),
-            effect_points: Default::default(),
-            sample_points: Default::default(),
+            control_points: Default::default(),
             custom_combo_colors: Default::default(),
             custom_colors: Default::default(),
             hit_objects: Default::default(),
@@ -196,7 +165,7 @@ pub enum ParseBeatmapError {
     #[error("failed to parse events section")]
     Events(#[from] ParseEventsError),
     #[error("failed to parse timing points section")]
-    TimingPoints(#[from] ParseTimingPointsError),
+    TimingPoints(#[from] ParseControlPointsError),
     #[error("failed to parse colors section")]
     Colors(#[from] ParseColorsError),
     #[error("failed to parse hit objects section")]
@@ -211,7 +180,7 @@ pub struct BeatmapState {
     metadata: MetadataState,
     difficulty: DifficultyState,
     events: EventsState,
-    timing_points: TimingPointsState,
+    control_points: ControlPointsState,
     colors: ColorsState,
     hit_objects: HitObjectsState,
 }
@@ -225,7 +194,7 @@ impl DecodeState for BeatmapState {
             metadata: MetadataState::create(version),
             difficulty: DifficultyState::create(version),
             events: EventsState::create(version),
-            timing_points: TimingPointsState::create(version),
+            control_points: ControlPointsState::create(version),
             colors: ColorsState::create(version),
             hit_objects: HitObjectsState::create(version),
         }
@@ -240,7 +209,7 @@ impl From<BeatmapState> for Beatmap {
         let metadata: Metadata = state.metadata.into();
         let difficulty: Difficulty = state.difficulty.into();
         let events: Events = state.events.into();
-        let timing_points: TimingPoints = state.timing_points.into();
+        let control_points: ControlPoints = state.control_points.into();
         let colors: Colors = state.colors.into();
         let hit_objects: HitObjects = state.hit_objects.into();
 
@@ -281,10 +250,7 @@ impl From<BeatmapState> for Beatmap {
             slider_tick_rate: difficulty.slider_tick_rate,
             background_file: events.background_file,
             breaks: events.breaks,
-            timing_points: timing_points.timing_points,
-            difficulty_points: timing_points.difficulty_points,
-            effect_points: timing_points.effect_points,
-            sample_points: timing_points.sample_points,
+            control_points,
             custom_combo_colors: colors.custom_combo_colors,
             custom_colors: colors.custom_colors,
             hit_objects: hit_objects.hit_objects,
@@ -298,7 +264,7 @@ impl DecodeBeatmap for Beatmap {
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         General::parse_general(&mut state.general, line)?;
-        TimingPoints::parse_general(&mut state.timing_points, line)?;
+        ControlPoints::parse_general(&mut state.control_points, line)?;
 
         Ok(())
     }
@@ -321,7 +287,7 @@ impl DecodeBeatmap for Beatmap {
     }
 
     fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        TimingPoints::parse_timing_points(&mut state.timing_points, line)
+        ControlPoints::parse_timing_points(&mut state.control_points, line)
             .map_err(ParseBeatmapError::TimingPoints)
     }
 
