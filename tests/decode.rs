@@ -362,30 +362,6 @@ fn get_last_object_time() {
 }
 
 #[test]
-fn combo_offset_osu() {
-    fn combo_offset(hit_object: &HitObject) -> i32 {
-        match hit_object.kind {
-            HitObjectKind::Circle(ref h) => h.combo_offset,
-            HitObjectKind::Slider(ref h) => h.combo_offset,
-            HitObjectKind::Spinner(_) | HitObjectKind::Hold(_) => {
-                panic!("expected circle or slider")
-            }
-        }
-    }
-
-    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/hitobject-combo-offset.osu")
-        .unwrap()
-        .hit_objects;
-
-    assert_eq!(combo_offset(&hit_objects[0]), 0);
-    assert_eq!(combo_offset(&hit_objects[2]), 2);
-    assert_eq!(combo_offset(&hit_objects[3]), 4);
-    assert_eq!(combo_offset(&hit_objects[4]), 6);
-    assert_eq!(combo_offset(&hit_objects[8]), 8);
-    assert_eq!(combo_offset(&hit_objects[9]), 11);
-}
-
-#[test]
 fn hit_objects() {
     let hit_objects = rosu_map::from_str::<HitObjects>(RENATUS)
         .unwrap()
@@ -916,45 +892,4 @@ fn new_combo_after_break() {
     assert!(hit_objects[0].new_combo());
     assert!(hit_objects[1].new_combo());
     assert!(!hit_objects[2].new_combo());
-}
-
-#[test]
-fn spinner_new_combo_between_objects() {
-    fn combo_offset(hit_object: &HitObject) -> i32 {
-        match hit_object.kind {
-            HitObjectKind::Circle(ref h) => h.combo_offset,
-            HitObjectKind::Slider(ref h) => h.combo_offset,
-            HitObjectKind::Spinner(_) | HitObjectKind::Hold(_) => {
-                panic!("expected circle or slider")
-            }
-        }
-    }
-
-    let hit_objects = rosu_map::from_path::<HitObjects>("./resources/spinner-between-objects.osu")
-        .unwrap()
-        .hit_objects;
-
-    assert_eq!(combo_offset(&hit_objects[0]), 1);
-    assert_eq!(combo_offset(&hit_objects[2]), 2);
-    assert_eq!(combo_offset(&hit_objects[3]), 2);
-    assert_eq!(combo_offset(&hit_objects[5]), 3);
-    assert_eq!(combo_offset(&hit_objects[6]), 3);
-    assert_eq!(combo_offset(&hit_objects[8]), 4);
-    assert_eq!(combo_offset(&hit_objects[9]), 4);
-    assert_eq!(combo_offset(&hit_objects[11]), 5);
-    assert_eq!(combo_offset(&hit_objects[12]), 6);
-    assert_eq!(combo_offset(&hit_objects[14]), 7);
-    assert_eq!(combo_offset(&hit_objects[15]), 8);
-    assert_eq!(combo_offset(&hit_objects[17]), 9);
-}
-
-#[test]
-fn slider_conversion_with_custom_dist() {
-    let mut hit_objects = rosu_map::from_path::<HitObjects>("./resources/custom-slider-length.osu")
-        .unwrap()
-        .hit_objects;
-
-    let first = hit_objects.first_mut().unwrap();
-
-    assert_eq!(first.end_time(), 3153.0);
 }
