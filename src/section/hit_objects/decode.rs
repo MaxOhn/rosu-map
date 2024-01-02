@@ -4,11 +4,15 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     reader::DecoderError,
     section::{
+        difficulty::DifficultyKey,
         events::{Events, EventsState, ParseEventsError},
         hit_objects::slider::path_type::PathType,
-        timing_points::{ControlPoints, ControlPointsState, ParseControlPointsError, SamplePoint},
+        timing_points::{
+            ControlPoints, ControlPointsState, DifficultyPoint, ParseControlPointsError,
+            SamplePoint, TimingPoint,
+        },
     },
-    util::{ParseNumber, ParseNumberError, Pos, StrExt},
+    util::{KeyValue, ParseNumber, ParseNumberError, Pos, StrExt},
     {FormatVersion, ParseVersionError},
 };
 
@@ -63,6 +67,7 @@ pub struct HitObjectsState {
     // points twice which is not ideal
     events: EventsState,
     control_points: ControlPointsState,
+    slider_multiplier: f32,
     hit_objects: HitObjects,
 }
 
@@ -281,6 +286,7 @@ impl DecodeState for HitObjectsState {
             point_split: Vec::new(),
             events: EventsState::create(version),
             control_points: ControlPointsState::create(version),
+            slider_multiplier: 0.0,
             hit_objects: HitObjects::default(),
         }
     }
@@ -302,22 +308,29 @@ impl From<HitObjectsState> for HitObjects {
         HitObjectsState::post_process_breaks(&mut hit_objects.hit_objects, &events);
 
         for h in hit_objects.hit_objects.iter_mut() {
-            let end_time = h.end_time();
-
-            let sample_point = control_points
-                .sample_point_at(end_time + CONTROL_POINT_LENIENCY)
-                .map_or_else(SamplePoint::default, SamplePoint::clone);
-
-            for sample in h.samples.iter_mut() {
-                sample_point.apply(sample);
-            }
-
             if let HitObjectKind::Slider(ref mut slider) = h.kind {
-                let span_count = slider.span_count() as f64;
+                const BASE_SCORING_DIST: f32 = 100.0;
+
+                let beat_len = control_points
+                    .timing_point_at(h.start_time)
+                    .map_or(TimingPoint::DEFAULT_BEAT_LEN, |point| point.beat_len);
+
+                let slider_velocity = control_points
+                    .difficulty_point_at(h.start_time)
+                    .map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
+                        point.slider_velocity
+                    });
+
+                let scoring_dist = f64::from(BASE_SCORING_DIST)
+                    * f64::from(state.slider_multiplier)
+                    * slider_velocity;
+
+                slider.velocity = scoring_dist / beat_len;
+
+                let span_count = f64::from(slider.span_count());
+                let duration = slider.duration();
 
                 for i in 0..slider.node_samples.len() {
-                    let duration = end_time - h.start_time;
-
                     let time =
                         h.start_time + i as f64 * duration / span_count + CONTROL_POINT_LENIENCY;
 
@@ -329,6 +342,16 @@ impl From<HitObjectsState> for HitObjects {
                         node_sample_point.apply(sample);
                     }
                 }
+            }
+
+            let end_time = h.end_time();
+
+            let sample_point = control_points
+                .sample_point_at(end_time + CONTROL_POINT_LENIENCY)
+                .map_or_else(SamplePoint::default, SamplePoint::clone);
+
+            for sample in h.samples.iter_mut() {
+                sample_point.apply(sample);
             }
         }
 
@@ -366,6 +389,17 @@ impl DecodeBeatmap for HitObjects {
     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         Events::parse_difficulty(&mut state.events, line)?;
         ControlPoints::parse_difficulty(&mut state.control_points, line)?;
+
+        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
+            return Ok(());
+        };
+
+        match key {
+            DifficultyKey::SliderMultiplier => {
+                state.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6);
+            }
+            _ => {}
+        }
 
         Ok(())
     }
@@ -507,6 +541,7 @@ impl DecodeBeatmap for HitObjects {
                 path: SliderPath::new(state.curve_points.clone(), len),
                 node_samples,
                 repeat_count,
+                velocity: 1.0,
             };
 
             HitObjectKind::Slider(slider)

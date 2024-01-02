@@ -19,10 +19,15 @@ pub struct HitObjectSlider {
     pub path: SliderPath,
     pub node_samples: Vec<Vec<HitSampleInfo>>,
     pub repeat_count: i32,
+    pub velocity: f64,
 }
 
 impl HitObjectSlider {
     pub const fn span_count(&self) -> i32 {
         self.repeat_count + 1
+    }
+
+    pub fn duration(&mut self) -> f64 {
+        self.span_count() as f64 * self.path.curve().dist() / self.velocity
     }
 }
