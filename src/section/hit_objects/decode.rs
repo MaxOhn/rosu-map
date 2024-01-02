@@ -80,10 +80,14 @@ impl HitObjectsState {
     ) -> Result<(), ParseHitObjectsError> {
         let f = |this: &mut Self, point_split: &[&str]| {
             let mut start_idx = 0;
-            let mut end_idx = 1;
+            let mut end_idx = 0;
             let mut first = true;
 
-            while end_idx < point_split.len() {
+            while {
+                end_idx += 1;
+
+                end_idx < point_split.len()
+            } {
                 let is_letter = point_split[end_idx]
                     .chars()
                     .next()
@@ -91,7 +95,6 @@ impl HitObjectsState {
                     .is_ascii_alphabetic();
 
                 if !is_letter {
-                    end_idx += 1;
                     continue;
                 }
 
@@ -100,15 +103,11 @@ impl HitObjectsState {
 
                 start_idx = end_idx;
                 first = false;
-
-                end_idx += 1;
             }
 
             if end_idx > start_idx {
                 this.convert_points(&point_split[start_idx..end_idx], None, first, offset)?;
             }
-
-            this.point_split.clear();
 
             Ok(())
         };
@@ -185,21 +184,22 @@ impl HitObjectsState {
         self.vertices[0].path_type = Some(path_type);
 
         let mut start_idx = 0;
-        let mut end_idx = 1;
+        let mut end_idx = 0;
 
-        while end_idx < self.vertices.len() - end_point_len {
+        while {
+            end_idx += 1;
+
+            end_idx < self.vertices.len() - end_point_len
+        } {
             if self.vertices[end_idx].pos != self.vertices[end_idx - 1].pos {
-                end_idx += 1;
                 continue;
             }
 
             if path_type == PathType::CATMULL && end_idx > 1 {
-                end_idx += 1;
                 continue;
             }
 
             if end_idx == self.vertices.len() - end_point_len - 1 {
-                end_idx += 1;
                 continue;
             }
 
@@ -208,7 +208,6 @@ impl HitObjectsState {
             self.curve_points.extend(&self.vertices[start_idx..end_idx]);
 
             start_idx = end_idx + 1;
-            end_idx += 1;
         }
 
         if end_idx > start_idx {
@@ -534,12 +533,14 @@ impl DecodeBeatmap for HitObjects {
                 .collect();
 
             state.convert_path_str(point_str, pos)?;
+            let mut control_points = Vec::with_capacity(state.curve_points.len());
+            control_points.append(&mut state.curve_points);
 
             let slider = HitObjectSlider {
                 pos,
                 new_combo: state.first_object || state.last_object_was_spinner() || new_combo,
                 combo_offset: if new_combo { combo_offset } else { 0 },
-                path: SliderPath::new(state.curve_points.clone(), len),
+                path: SliderPath::new(control_points, len),
                 node_samples,
                 repeat_count,
                 velocity: 1.0,
