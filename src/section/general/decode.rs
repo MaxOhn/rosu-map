@@ -9,7 +9,7 @@ use crate::{
 use super::{CountdownType, GameMode, ParseCountdownTypeError, ParseGameModeError};
 
 /// Struct containing all data from a `.osu` file's `[General]` section.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct General {
     pub audio_file: String,
     pub audio_lead_in: f64,
@@ -25,6 +25,27 @@ pub struct General {
     pub samples_match_playback_rate: bool,
     pub countdown: CountdownType,
     pub countdown_offset: i32,
+}
+
+impl Default for General {
+    fn default() -> Self {
+        Self {
+            audio_file: Default::default(),
+            audio_lead_in: Default::default(),
+            preview_time: -1,
+            default_sample_bank: Default::default(),
+            default_sample_volume: Default::default(),
+            stack_leniency: 0.7,
+            mode: Default::default(),
+            letterbox_in_breaks: Default::default(),
+            special_style: Default::default(),
+            widescreen_storyboard: Default::default(),
+            epilepsy_warning: Default::default(),
+            samples_match_playback_rate: Default::default(),
+            countdown: CountdownType::Normal,
+            countdown_offset: Default::default(),
+        }
+    }
 }
 
 section_keys! {

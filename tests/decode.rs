@@ -1,5 +1,4 @@
 use rosu_map::{
-    beatmap::ParseBeatmapError,
     section::{
         colors::{Color, Colors},
         difficulty::Difficulty,
@@ -16,7 +15,7 @@ use rosu_map::{
         },
     },
     util::Pos,
-    Beatmap, ParseVersionError,
+    Beatmap,
 };
 use test_log::test;
 
@@ -672,12 +671,7 @@ fn no_blank_after_header() {
 
 #[test]
 fn empty_file() {
-    assert!(matches!(
-        rosu_map::from_bytes::<Beatmap>(&[]),
-        Err(ParseBeatmapError::FormatVersion(
-            ParseVersionError::UnknownFileFormat
-        ))
-    ));
+    assert_eq!(Beatmap::from_bytes(&[]).unwrap(), Beatmap::default());
 }
 
 #[test]
