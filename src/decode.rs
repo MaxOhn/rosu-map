@@ -16,6 +16,17 @@ pub use crate::reader::DecoderError;
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing a path to a
 /// `.osu` file.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rosu_map::section::hit_objects::HitObjects;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let path = "/path/to/file.osu";
+/// let content: HitObjects = rosu_map::from_path(path)?;
+/// # Ok(()) }
+/// ```
 pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, D::Error> {
     File::open(path)
         .map_err(DecoderError::from)
@@ -26,12 +37,46 @@ pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, D::Error
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing the content of
 /// a `.osu` file as a slice of bytes.
+///
+/// # Example
+///
+/// ```rust
+/// use rosu_map::section::metadata::Metadata;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let bytes: &[u8] = b"[General]
+/// Mode: 2
+///
+/// [Metadata]
+/// Creator: pishifat";
+///
+/// let metadata: Metadata = rosu_map::from_bytes(bytes)?;
+/// assert_eq!(metadata.creator, "pishifat");
+/// # Ok(()) }
+/// ```
 pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, D::Error> {
     D::decode(Cursor::new(bytes))
 }
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing the content of
 /// a `.osu` file as a string.
+///
+/// # Example
+///
+/// ```rust
+/// use rosu_map::section::difficulty::Difficulty;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let s: &str = "[Difficulty]
+/// SliderMultiplier: 3
+///
+/// [Editor]
+/// BeatDivisor: 4";
+///
+/// let difficulty: Difficulty = rosu_map::from_str(s)?;
+/// assert_eq!(difficulty.slider_multiplier, 3.0);
+/// # Ok(()) }
+/// ```
 pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, D::Error> {
     D::decode(Cursor::new(s))
 }
@@ -45,13 +90,14 @@ pub trait DecodeState: Sized {
     fn create(version: FormatVersion) -> Self;
 }
 
-/// Trait to handle reading and parsing of `.osu` files.
+/// Trait to handle reading and parsing content of `.osu` files.
 ///
 /// Generally, the only way to interact with this trait should be calling the
 /// [`decode`] method.
 ///
 /// Each section has its own `parse_[section]` method in which, given the next
-/// line, the state should be updated.
+/// line, the state should be updated. Note that the given lines will be
+/// non-empty but comments (text starting with `//`) are **not trimmed**.
 ///
 /// # Example
 ///
@@ -64,47 +110,50 @@ pub trait DecodeState: Sized {
 /// use rosu_map::section::general::GameMode;
 /// use rosu_map::section::hit_objects::HitObjects;
 ///
-/// let content = "osu file format v14
+/// let content: &str = "osu file format v14
 ///
 /// [General]
-/// Mode: 1    // Some comment
+/// Mode: 1 // Some comment
 ///
 /// [Metadata]
 /// Title: Some song title";
 ///
-/// let mut reader = Cursor::new(content);
+/// // Converting &str to &[u8] so that io::BufRead is satisfied
+/// let mut reader = content.as_bytes();
 /// let decoded = HitObjects::decode(&mut reader).unwrap();
+/// assert_eq!(decoded.mode, GameMode::Taiko);
 /// assert!(decoded.hit_objects.is_empty());
 ///
-/// let mut reader = Cursor::new(content);
+/// let mut reader = content.as_bytes();
 /// let decoded = Beatmap::decode(&mut reader).unwrap();
 /// assert_eq!(decoded.mode, GameMode::Taiko);
 /// assert_eq!(decoded.title, "Some song title");
 /// ```
 ///
-/// Let's assume only the beatmap title and hitobjects are of interest. Using
-/// [`Beatmap`] will parse **everything** which will be slower than
-/// implementing this trait on a custom type:
+/// Let's assume only the beatmap title and difficulty attributes are of
+/// interest. Using [`Beatmap`] will parse **everything** which will be much
+/// slower than implementing this trait on a custom type:
 ///
 /// ```
 /// use rosu_map::{DecodeBeatmap, DecodeState, FormatVersion};
-/// use rosu_map::section::hit_objects::{
-///     HitObject, HitObjects, HitObjectsState, ParseHitObjectsError,
-/// };
+/// use rosu_map::section::difficulty::{Difficulty, DifficultyState, ParseDifficultyError};
 /// use rosu_map::section::metadata::MetadataKey;
 /// use rosu_map::util::KeyValue;
 ///
 /// // Our final struct that we want to parse into.
 /// struct CustomBeatmap {
 ///     title: String,
-///     hit_objects: Vec<HitObject>,
+///     ar: f32,
+///     cs: f32,
+///     hp: f32,
+///     od: f32,
 /// }
 ///
 /// // The struct that will be built gradually while parsing.
 /// struct CustomBeatmapState {
 ///     title: String,
-///     // Built-in way to handle hitobject parsing.
-///     hit_objects: HitObjectsState,
+///     // Built-in way to handle difficulty parsing.
+///     difficulty: DifficultyState,
 /// }
 ///
 /// // Required to implement for the `DecodeBeatmap` trait.
@@ -112,7 +161,7 @@ pub trait DecodeState: Sized {
 ///     fn create(version: FormatVersion) -> Self {
 ///         Self {
 ///             title: String::new(),
-///             hit_objects: HitObjectsState::create(version),
+///             difficulty: DifficultyState::create(version),
 ///         }
 ///     }
 /// }
@@ -120,9 +169,14 @@ pub trait DecodeState: Sized {
 /// // Also required for the `DecodeBeatmap` trait
 /// impl From<CustomBeatmapState> for CustomBeatmap {
 ///     fn from(state: CustomBeatmapState) -> Self {
+///         let difficulty = Difficulty::from(state.difficulty);
+///
 ///         Self {
 ///             title: state.title,
-///             hit_objects: HitObjects::from(state.hit_objects).hit_objects,
+///             ar: difficulty.approach_rate,
+///             cs: difficulty.circle_size,
+///             hp: difficulty.hp_drain_rate,
+///             od: difficulty.overall_difficulty,
 ///         }
 ///     }
 /// }
@@ -130,15 +184,16 @@ pub trait DecodeState: Sized {
 /// impl DecodeBeatmap for CustomBeatmap {
 ///     type State = CustomBeatmapState;
 ///
-///     // In our case, only parsing the hitobjects can fail so we can just use
-///     // their error type.
-///     type Error = ParseHitObjectsError;
+///     // In our case, only parsing the difficulty can fail so we can just use
+///     // its error type.
+///     type Error = ParseDifficultyError;
 ///
 ///     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
 ///         // Note that comments are *not* trimmed at this point.
 ///         // To do that, one can use the `rosu_map::util::StrExt` trait and
 ///         // its `trim_comment` method.
 ///         let Ok(KeyValue { key, value }) = KeyValue::parse(line) else {
+///             // Unknown key, discard line
 ///             return Ok(());
 ///         };
 ///
@@ -150,22 +205,16 @@ pub trait DecodeState: Sized {
 ///         Ok(())
 ///     }
 ///
-///     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-///         HitObjects::parse_hit_objects(&mut state.hit_objects, line)
+///     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
+///         // Let `Difficulty` and its state handle the difficulty parsing.
+///         Difficulty::parse_difficulty(&mut state.difficulty, line)
 ///     }
 ///
-///     // Technically, it's recommended to call `HitObjects::parse_[section]`
-///     // for each of these in case the hitobjects rely on data from another
-///     // section. However, looking at `HitObjects`' implementation of
-///     // `DecodeBeatmap`, one can see that only `parse_hit_objects` is
-///     // used so we don't need to use any other method either.
+///     // None of the other sections are of interest.
 ///     fn parse_general(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
 ///         Ok(())
 ///     }
 ///     fn parse_editor(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
-///         Ok(())
-///     }
-///     fn parse_difficulty(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
 ///         Ok(())
 ///     }
 ///     fn parse_events(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
@@ -175,6 +224,9 @@ pub trait DecodeState: Sized {
 ///         Ok(())
 ///     }
 ///     fn parse_colors(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
+///         Ok(())
+///     }
+///     fn parse_hit_objects(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
 ///         Ok(())
 ///     }
 /// }
@@ -204,6 +256,7 @@ pub trait DecodeBeatmap: Sized {
 
         let (version, use_curr_line) = match FormatVersion::parse(&mut reader) {
             Ok(version) => (version, false),
+            // Only used when `tracing` feature is enabled
             #[allow(unused)]
             Err(err) => {
                 #[cfg(feature = "tracing")]
@@ -250,58 +303,34 @@ pub trait DecodeBeatmap: Sized {
     }
 
     /// Update the state based on a line of the `[General]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[Editor]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[Metadata]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[Difficulty]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[Events]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[TimingPoints]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[Colours]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 
     /// Update the state based on a line of the `[HitObjects]` section.
-    ///
-    /// The line will be non-empty but comments (text starting with `//`) are
-    /// **not** trimmed.
     #[allow(unused_variables)]
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 }
@@ -341,6 +370,7 @@ where
             return ControlFlow::Break(SectionFlow::Continue(next));
         }
 
+        // Only used when `tracing` feature is enabled
         #[allow(unused)]
         let res = f(state, line);
 

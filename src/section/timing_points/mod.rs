@@ -7,7 +7,9 @@ pub use self::{
         sample::SamplePoint,
         timing::{TimeSignature, TimeSignatureError, TimingPoint},
     },
-    decode::{ControlPoints, ParseTimingPointsError, TimingPoints, TimingPointsState},
+    decode::{
+        ControlPoint, ControlPoints, ParseTimingPointsError, TimingPoints, TimingPointsState,
+    },
 };
 
 mod control_points;
