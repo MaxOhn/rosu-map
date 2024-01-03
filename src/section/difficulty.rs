@@ -83,11 +83,11 @@ impl DecodeBeatmap for Difficulty {
                 state.difficulty.overall_difficulty = value.parse_num()?;
 
                 if !state.has_approach_rate {
-                    state.difficulty.approach_rate = dbg!(state.difficulty.overall_difficulty);
+                    state.difficulty.approach_rate = state.difficulty.overall_difficulty;
                 }
             }
             DifficultyKey::ApproachRate => {
-                state.difficulty.approach_rate = dbg!(value.parse_num()?);
+                state.difficulty.approach_rate = value.parse_num()?;
                 state.has_approach_rate = true;
             }
             DifficultyKey::SliderMultiplier => {

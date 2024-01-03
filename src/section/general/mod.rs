@@ -16,7 +16,7 @@ pub enum GameMode {
     Mania,
 }
 
-/// Error type for a failed parsing of [`GameMode`].
+/// Error when failing to parse a [`GameMode`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid game mode")]
 pub struct ParseGameModeError;
@@ -73,7 +73,7 @@ impl FromStr for CountdownType {
     }
 }
 
-/// Error type for a failed parsing of [`CountdownType`].
+/// Error when failing to parse a [`CountdownType`].
 #[derive(Debug, thiserror::Error)]
 #[error("invalid countdown type")]
 pub struct ParseCountdownTypeError;

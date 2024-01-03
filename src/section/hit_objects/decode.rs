@@ -137,11 +137,11 @@ pub struct HitObjectsState {
 }
 
 impl HitObjectsState {
-    pub fn version(&self) -> FormatVersion {
+    pub const fn version(&self) -> FormatVersion {
         self.timing_points.version()
     }
 
-    pub fn difficulty(&self) -> &Difficulty {
+    pub const fn difficulty(&self) -> &Difficulty {
         &self.difficulty.difficulty
     }
 

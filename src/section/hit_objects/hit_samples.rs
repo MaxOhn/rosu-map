@@ -84,11 +84,14 @@ impl HitSampleInfo {
         }
     }
 
+    /// The filename with the highest preference that can be used as a source.
     pub const fn lookup_name(&self) -> LookupName<'_> {
         LookupName(self)
     }
 }
 
+/// The filename of [`HitSampleInfo`] with the highest preference that can be
+/// used as a source.
 pub struct LookupName<'a>(&'a HitSampleInfo);
 
 impl Display for LookupName<'_> {
@@ -167,7 +170,7 @@ impl TryFrom<i32> for SampleBank {
     }
 }
 
-/// Error type for a failed parsing of [`SampleBank`].
+/// Error when failing to parse a [`SampleBank`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid sample bank value")]
 pub struct ParseSampleBankError;
@@ -226,7 +229,7 @@ impl FromStr for HitSoundType {
     }
 }
 
-/// Error type for a failed parsing of [`HitSoundType`].
+/// Error when failing to parse a [`HitSoundType`].
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid hit sound type")]
 pub struct ParseHitSoundTypeError(#[source] ParseIntError);

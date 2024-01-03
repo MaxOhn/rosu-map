@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 #[derive(Clone, Debug, PartialEq)]
+/// Effect-related info about this control point.
 pub struct EffectPoint {
     pub time: f64,
     pub kiai: bool,

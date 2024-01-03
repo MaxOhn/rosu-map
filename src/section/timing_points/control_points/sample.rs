@@ -3,6 +3,7 @@ use std::{cmp::Ordering, num::NonZeroU32};
 use crate::section::hit_objects::hit_samples::{HitSampleInfo, SampleBank};
 
 #[derive(Clone, Debug, PartialEq)]
+/// Audio-related info about this control point.
 pub struct SamplePoint {
     pub time: f64,
     pub sample_bank: SampleBank,

@@ -18,9 +18,8 @@ pub struct SliderPath {
 impl SliderPath {
     /// Creates a new [`SliderPath`].
     ///
-    /// The contained [`Curve`] will **not** be calculated yet, only when
-    /// accessing it via [`SliderPath::curve`] or
-    /// [`SliderPath::curve_with_bufs`].
+    /// The contained [`Curve`] will not necessarily be calculated yet, only
+    /// when accessing it with methods such as [`SliderPath::curve`].
     pub const fn new(control_points: Vec<PathControlPoint>, expected_dist: Option<f64>) -> Self {
         Self {
             control_points,

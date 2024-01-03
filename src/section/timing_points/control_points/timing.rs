@@ -1,6 +1,7 @@
 use std::{cmp::Ordering, num::NonZeroU32};
 
 #[derive(Clone, Debug, PartialEq)]
+/// The time signature at this control point.
 pub struct TimingPoint {
     pub time: f64,
     pub beat_len: f64,
@@ -46,6 +47,7 @@ impl PartialOrd for TimingPoint {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+/// The time signature of a track.
 pub struct TimeSignature {
     pub numerator: NonZeroU32,
 }
@@ -87,6 +89,7 @@ impl TryFrom<i32> for TimeSignature {
     }
 }
 
+/// Error when failing to parse a [`TimeSignature`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid time signature, must be positive integer")]
 pub struct TimeSignatureError;

@@ -376,7 +376,10 @@ fn parse_section<R: BufRead, S, E>(
     reader: &mut Reader<R>,
     state: &mut S,
     f: fn(&mut S, &str) -> Result<(), E>,
-) -> Result<SectionFlow, DecoderError> {
+) -> Result<SectionFlow, DecoderError>
+where
+    E: Error,
+{
     let mut f = |line: &str| {
         if let Some(next) = Section::try_from_line(line) {
             return ControlFlow::Break(SectionFlow::Continue(next));

@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 #[derive(Clone, Debug, PartialEq)]
+/// Difficulty-related info about this control point.
 pub struct DifficultyPoint {
     pub time: f64,
     pub bpm_multiplier: f64,

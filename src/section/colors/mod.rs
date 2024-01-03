@@ -9,7 +9,7 @@ mod decode;
 
 /// Basic RGBA color.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct Color([u8; 4]);
+pub struct Color(pub [u8; 4]);
 
 impl Color {
     /// Initialize a new color.
@@ -49,6 +49,12 @@ impl Index<usize> for Color {
 impl IndexMut<usize> for Color {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
+    }
+}
+
+impl From<[u8; 4]> for Color {
+    fn from(color: [u8; 4]) -> Self {
+        Self(color)
     }
 }
 

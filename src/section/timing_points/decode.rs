@@ -61,7 +61,9 @@ impl Default for TimingPoints {
     }
 }
 
-/// Struct containing all data from a `.osu` file's `[TimingPoints]` section.
+/// All control points of a [`Beatmap`].
+///
+/// [`Beatmap`]: crate::Beatmap
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ControlPoints {
     pub timing_points: Vec<TimingPoint>,
@@ -115,7 +117,7 @@ impl ControlPoints {
     }
 }
 
-/// A [`ControlPoint`] to be added into [`ControlPoints`].
+/// A control point to be added into [`ControlPoints`].
 pub trait ControlPoint {
     /// Whether `self` is redundant w.r.t. an already existing control point.
     fn check_already_existing(&self, control_points: &ControlPoints) -> bool;
@@ -273,11 +275,11 @@ impl Pending for SamplePoint {
 }
 
 impl TimingPointsState {
-    pub fn version(&self) -> FormatVersion {
+    pub const fn version(&self) -> FormatVersion {
         self.general.version
     }
 
-    pub fn general(&self) -> &General {
+    pub const fn general(&self) -> &General {
         &self.general.general
     }
 
