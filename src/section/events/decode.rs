@@ -1,8 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     util::{ParseNumber, ParseNumberError, StrExt},
-    {FormatVersion, ParseVersionError},
+    FormatVersion,
 };
 
 use super::{BreakPeriod, EventType, ParseEventTypeError};
@@ -17,10 +16,6 @@ pub struct Events {
 /// All the ways that parsing a `.osu` file into [`Events`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseEventsError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse event type")]
     EventType(#[from] ParseEventTypeError),
     #[error("invalid line")]

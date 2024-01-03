@@ -2,10 +2,9 @@ use std::{num::ParseIntError, str::FromStr};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     section::UnknownKeyError,
     util::{KeyValue, ParseNumberError, StrExt},
-    {FormatVersion, ParseVersionError},
+    FormatVersion,
 };
 
 use super::{Color, CustomColor};
@@ -48,10 +47,6 @@ impl FromStr for ColorsKey {
 /// All the ways that parsing a `.osu` file into [`Colors`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseColorsError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
     #[error("color specified in incorrect format (should be R,G,B or R,G,B,A)")]
     IncorrectColor,
     #[error("failed to parse number")]

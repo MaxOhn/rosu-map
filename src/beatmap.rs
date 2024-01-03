@@ -13,7 +13,7 @@ use crate::{
         metadata::{Metadata, MetadataState, ParseMetadataError},
         timing_points::ControlPoints,
     },
-    FormatVersion, ParseVersionError,
+    FormatVersion,
 };
 
 /// Fully parsed content of a `.osu` file.
@@ -79,19 +79,19 @@ pub struct Beatmap {
 
 impl Beatmap {
     /// Parse a [`Beatmap`] by providing a path to a `.osu` file.
-    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, ParseBeatmapError> {
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, DecoderError> {
         crate::from_path(path)
     }
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// slice of bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ParseBeatmapError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, DecoderError> {
         crate::from_bytes(bytes)
     }
 }
 
 impl FromStr for Beatmap {
-    type Err = ParseBeatmapError;
+    type Err = DecoderError;
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// string.
@@ -159,20 +159,16 @@ impl Default for Beatmap {
 /// All the ways that parsing a `.osu` file into [`Beatmap`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseBeatmapError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
-    #[error("failed to parse editor section")]
-    Editor(#[from] ParseEditorError),
-    #[error("failed to parse metadata section")]
-    Metadata(#[from] ParseMetadataError),
-    #[error("failed to parse difficulty section")]
-    Difficulty(#[from] ParseDifficultyError),
     #[error("failed to parse colors section")]
     Colors(#[from] ParseColorsError),
+    #[error("failed to parse difficulty section")]
+    Difficulty(#[from] ParseDifficultyError),
+    #[error("failed to parse editor section")]
+    Editor(#[from] ParseEditorError),
     #[error("failed to parse hit objects")]
     HitOjects(#[from] ParseHitObjectsError),
+    #[error("failed to parse metadata section")]
+    Metadata(#[from] ParseMetadataError),
 }
 
 /// The parsing state for [`Beatmap`] in [`DecodeBeatmap`].

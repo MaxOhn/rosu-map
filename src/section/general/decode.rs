@@ -1,9 +1,8 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     section::hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
-    {FormatVersion, ParseVersionError},
+    FormatVersion,
 };
 
 use super::{CountdownType, GameMode, ParseCountdownTypeError, ParseGameModeError};
@@ -72,10 +71,6 @@ section_keys! {
 /// All the ways that parsing a `.osu` file into [`General`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseGeneralError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse countdown type")]
     CountdownType(#[from] ParseCountdownTypeError),
     #[error("failed to parse mode")]

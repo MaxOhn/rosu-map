@@ -2,7 +2,6 @@ use std::{cmp, slice};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     section::{
         difficulty::{Difficulty, DifficultyState, ParseDifficultyError},
         events::{BreakPeriod, Events, EventsState, ParseEventsError},
@@ -14,7 +13,7 @@ use crate::{
         },
     },
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
-    {FormatVersion, ParseVersionError},
+    FormatVersion,
 };
 
 use super::{
@@ -67,10 +66,6 @@ pub struct HitObjects {
 /// All the ways that parsing a `.osu` file into [`HitObjects`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseHitObjectsError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse difficulty section")]
     Difficulty(ParseDifficultyError),
     #[error("failed to parse events section")]

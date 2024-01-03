@@ -1,8 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     util::{KeyValue, ParseNumberError, StrExt},
-    {FormatVersion, ParseVersionError},
+    FormatVersion,
 };
 
 /// Struct containing all data from a `.osu` file's `[Editor]` section.
@@ -29,10 +28,6 @@ section_keys! {
 /// All the ways that parsing a `.osu` file into [`Editor`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseEditorError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse number")]
     Number(#[from] ParseNumberError),
 }

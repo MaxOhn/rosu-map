@@ -6,11 +6,7 @@ use std::{
     path::Path,
 };
 
-use crate::{
-    reader::Reader,
-    section::Section,
-    {FormatVersion, ParseVersionError},
-};
+use crate::{reader::Reader, section::Section, FormatVersion};
 
 pub use crate::reader::DecoderError;
 
@@ -27,10 +23,9 @@ pub use crate::reader::DecoderError;
 /// let content: HitObjects = rosu_map::from_path(path)?;
 /// # Ok(()) }
 /// ```
-pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, D::Error> {
+pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, DecoderError> {
     File::open(path)
         .map_err(DecoderError::from)
-        .map_err(D::Error::from)
         .map(BufReader::new)
         .and_then(D::decode)
 }
@@ -54,7 +49,7 @@ pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, D::Error
 /// assert_eq!(metadata.creator, "pishifat");
 /// # Ok(()) }
 /// ```
-pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, D::Error> {
+pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, DecoderError> {
     D::decode(Cursor::new(bytes))
 }
 
@@ -77,7 +72,7 @@ pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, D::Error> {
 /// assert_eq!(difficulty.slider_multiplier, 3.0);
 /// # Ok(()) }
 /// ```
-pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, D::Error> {
+pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, DecoderError> {
     D::decode(Cursor::new(s))
 }
 
@@ -240,9 +235,16 @@ pub trait DecodeState: Sized {
 /// [`HitObjects`]: crate::section::hit_objects::HitObjects
 /// [`TimingPoints`]: crate::section::timing_points::TimingPoints
 pub trait DecodeBeatmap: Sized {
-    /// Returned error type in case something goes wrong while reading or
-    /// parsing.
-    type Error: Error + From<DecoderError> + From<ParseVersionError>;
+    /// Error type in case something goes wrong while parsing.
+    ///
+    /// Note that this error is not thrown by the [`decode`] method. Instead,
+    /// when a `parse_[section]` method returns such an error, it will be
+    /// handled silently. That means, if the `tracing` feature is enabled, the
+    /// error and its causes will be logged on the `ERROR` level. If `tracing`
+    /// is not enabled, the error will be ignored entirely.
+    ///
+    /// [`decode`]: DecodeBeatmap::decode
+    type Error: Error;
 
     /// The parsing state which will be updated on each line and turned into
     /// `Self` at the end.
@@ -251,24 +253,10 @@ pub trait DecodeBeatmap: Sized {
     /// The key method to read and parse content of a `.osu` file into `Self`.
     ///
     /// This method should not be implemented manually.
-    fn decode<R: BufRead>(src: R) -> Result<Self, Self::Error> {
+    fn decode<R: BufRead>(src: R) -> Result<Self, DecoderError> {
         let mut reader = Reader::new(src)?;
 
-        let (version, use_curr_line) = match FormatVersion::parse(&mut reader) {
-            Ok(version) => (version, false),
-            // Only used when `tracing` feature is enabled
-            #[allow(unused)]
-            Err(err) => {
-                #[cfg(feature = "tracing")]
-                {
-                    tracing::error!("Failed to parse format version: {err}");
-                    log_error_cause(&err);
-                }
-
-                (FormatVersion::default(), true)
-            }
-        };
-
+        let (version, use_curr_line) = parse_version(&mut reader)?;
         let mut state = Self::State::create(version);
 
         let Some(mut section) = parse_first_section(&mut reader, use_curr_line)? else {
@@ -335,9 +323,36 @@ pub trait DecodeBeatmap: Sized {
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 }
 
+struct UseCurrentLine(bool);
+
+fn parse_version<R: BufRead>(
+    reader: &mut Reader<R>,
+) -> Result<(FormatVersion, UseCurrentLine), DecoderError> {
+    loop {
+        let (version, use_curr_line) = match reader.next_line(FormatVersion::try_from_line)? {
+            Some(ControlFlow::Continue(())) => continue,
+            Some(ControlFlow::Break(Ok(version))) => (version, false),
+            // Only used when `tracing` feature is enabled
+            #[allow(unused)]
+            Some(ControlFlow::Break(Err(err))) => {
+                #[cfg(feature = "tracing")]
+                {
+                    tracing::error!("Failed to parse format version: {err}");
+                    log_error_cause(&err);
+                }
+
+                (FormatVersion::default(), true)
+            }
+            None => (FormatVersion::default(), false),
+        };
+
+        return Ok((version, UseCurrentLine(use_curr_line)));
+    }
+}
+
 fn parse_first_section<R: BufRead>(
     reader: &mut Reader<R>,
-    use_curr_line: bool,
+    UseCurrentLine(use_curr_line): UseCurrentLine,
 ) -> Result<Option<Section>, DecoderError> {
     if use_curr_line {
         if let res @ (Ok(Some(_)) | Err(_)) = reader.curr_line().map(Section::try_from_line) {
@@ -361,10 +376,7 @@ fn parse_section<R: BufRead, S, E>(
     reader: &mut Reader<R>,
     state: &mut S,
     f: fn(&mut S, &str) -> Result<(), E>,
-) -> Result<SectionFlow, E>
-where
-    E: Error + From<DecoderError>,
-{
+) -> Result<SectionFlow, DecoderError> {
     let mut f = |line: &str| {
         if let Some(next) = Section::try_from_line(line) {
             return ControlFlow::Break(SectionFlow::Continue(next));
@@ -388,7 +400,7 @@ where
             Ok(Some(ControlFlow::Continue(()))) => {}
             Ok(Some(ControlFlow::Break(flow))) => return Ok(flow),
             Ok(None) => return Ok(SectionFlow::Break(())),
-            Err(err) => return Err(err.into()),
+            Err(err) => return Err(err),
         }
     }
 }

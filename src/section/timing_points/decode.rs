@@ -1,12 +1,11 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     section::{
         general::{CountdownType, GameMode, General, GeneralState, ParseGeneralError},
         hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     },
     util::{ParseNumber, ParseNumberError, StrExt, MAX_PARSE_VALUE},
-    {FormatVersion, ParseVersionError},
+    FormatVersion,
 };
 
 use super::{
@@ -181,10 +180,6 @@ impl ControlPoint for SamplePoint {
 /// All the ways that parsing a `.osu` file into [`TimingPoints`] can fail.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseTimingPointsError {
-    #[error("decoder error")]
-    Decoder(#[from] DecoderError),
-    #[error("failed to parse format version")]
-    FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse effect flags")]
     EffectFlags(#[from] ParseEffectFlagsError),
     #[error("failed to parse general section")]
