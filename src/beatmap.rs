@@ -79,12 +79,41 @@ pub struct Beatmap {
 
 impl Beatmap {
     /// Parse a [`Beatmap`] by providing a path to a `.osu` file.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use rosu_map::Beatmap;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let path = "/path/to/file.osu";
+    /// let map: Beatmap = Beatmap::from_path(path)?;
+    /// # Ok(()) }
+    /// ```
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, DecoderError> {
         crate::from_path(path)
     }
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// slice of bytes.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use rosu_map::Beatmap;
+    /// use rosu_map::section::general::GameMode;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let bytes: &[u8] = b"[General]
+    /// Mode: 2
+    ///
+    /// [Metadata]
+    /// Creator: pishifat";
+    ///
+    /// let map: Beatmap = Beatmap::from_bytes(bytes)?;
+    /// assert_eq!(map.mode, GameMode::Catch);
+    /// assert_eq!(map.creator, "pishifat");
+    /// # Ok(()) }
+    /// ```
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, DecoderError> {
         crate::from_bytes(bytes)
     }
@@ -95,6 +124,24 @@ impl FromStr for Beatmap {
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// string.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use rosu_map::Beatmap;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let s: &str = "[Difficulty]
+    /// SliderMultiplier: 3
+    ///
+    /// [Editor]
+    /// BeatDivisor: 4";
+    ///
+    /// let map: Beatmap = s.parse()?; // same as `Beatmap::from_str(s)`
+    /// # let _ = <Beatmap as std::str::FromStr>::from_str(s).unwrap();
+    /// assert_eq!(map.slider_multiplier, 3.0);
+    /// assert_eq!(map.beat_divisor, 4);
+    /// # Ok(()) }
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         crate::from_str(s)
     }

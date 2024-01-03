@@ -122,10 +122,10 @@ impl Display for SampleBank {
 impl SampleBank {
     pub const fn to_lowercase_str(self) -> &'static str {
         match self {
-            SampleBank::None => "none",
-            SampleBank::Normal => "normal",
-            SampleBank::Soft => "soft",
-            SampleBank::Drum => "drum",
+            Self::None => "none",
+            Self::Normal => "normal",
+            Self::Soft => "soft",
+            Self::Drum => "drum",
         }
     }
 

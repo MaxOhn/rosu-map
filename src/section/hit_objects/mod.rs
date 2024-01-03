@@ -83,10 +83,10 @@ impl HitObjectKind {
     /// Whether the [`HitObjectKind`] starts a new combo.
     pub const fn new_combo(&self) -> bool {
         match self {
-            HitObjectKind::Circle(h) => h.new_combo,
-            HitObjectKind::Slider(h) => h.new_combo,
-            HitObjectKind::Spinner(h) => h.new_combo,
-            HitObjectKind::Hold(_) => false,
+            Self::Circle(h) => h.new_combo,
+            Self::Slider(h) => h.new_combo,
+            Self::Spinner(h) => h.new_combo,
+            Self::Hold(_) => false,
         }
     }
 }

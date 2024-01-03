@@ -17,13 +17,11 @@
 #[macro_use]
 mod macros;
 
+mod beatmap;
 mod decode;
 mod encode;
 mod format_version;
 mod reader;
-
-/// Fully parsed content of a `.osu` file.
-pub mod beatmap;
 
 /// Section-specific types.
 pub mod section;
@@ -32,7 +30,7 @@ pub mod section;
 pub mod util;
 
 pub use crate::{
-    beatmap::Beatmap,
+    beatmap::{Beatmap, BeatmapState, ParseBeatmapError},
     decode::{from_bytes, from_path, from_str, DecodeBeatmap, DecodeState, DecoderError},
     format_version::FormatVersion,
 };

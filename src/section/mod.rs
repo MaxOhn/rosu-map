@@ -41,14 +41,14 @@ impl Section {
         let section = line.strip_prefix('[')?.strip_suffix(']')?;
 
         let section = match section {
-            "General" => Section::General,
-            "Editor" => Section::Editor,
-            "Metadata" => Section::Metadata,
-            "Difficulty" => Section::Difficulty,
-            "Events" => Section::Events,
-            "TimingPoints" => Section::TimingPoints,
-            "Colours" => Section::Colors,
-            "HitObjects" => Section::HitObjects,
+            "General" => Self::General,
+            "Editor" => Self::Editor,
+            "Metadata" => Self::Metadata,
+            "Difficulty" => Self::Difficulty,
+            "Events" => Self::Events,
+            "TimingPoints" => Self::TimingPoints,
+            "Colours" => Self::Colors,
+            "HitObjects" => Self::HitObjects,
             _ => return None,
         };
 
@@ -56,7 +56,7 @@ impl Section {
     }
 }
 
-/// The error of a failed parsing of a section key.
+/// The error when failing to parse a section key.
 #[derive(Debug, thiserror::Error)]
 #[error("unknown key")]
 pub struct UnknownKeyError;

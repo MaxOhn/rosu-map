@@ -28,9 +28,9 @@ impl Encoding {
     /// In case of UTF-16, the result will be stored in `dst`.
     pub fn decode<'a>(self, src: &'a [u8], dst: &'a mut String) -> Result<&'a str, DecoderError> {
         match self {
-            Encoding::Utf8 => Ok(str_from_utf8(src)?),
-            Encoding::Utf16LE => Self::decode_utf16(U16LeIterator::new(src)?, dst),
-            Encoding::Utf16BE => Self::decode_utf16(U16BeIterator::new(src)?, dst),
+            Self::Utf8 => Ok(str_from_utf8(src)?),
+            Self::Utf16LE => Self::decode_utf16(U16LeIterator::new(src)?, dst),
+            Self::Utf16BE => Self::decode_utf16(U16BeIterator::new(src)?, dst),
         }
     }
 
