@@ -12,6 +12,7 @@ use rosu_map::{
         metadata::Metadata,
         timing_points::{
             ControlPoints, DifficultyPoint, EffectPoint, SamplePoint, TimeSignature, TimingPoint,
+            TimingPoints,
         },
     },
     util::Pos,
@@ -129,7 +130,9 @@ fn image_as_video() {
 
 #[test]
 fn timing_points() {
-    let control_points: ControlPoints = rosu_map::from_str(RENATUS).unwrap();
+    let control_points = rosu_map::from_str::<TimingPoints>(RENATUS)
+        .unwrap()
+        .control_points;
 
     assert_eq!(control_points.timing_points.len(), 4);
     assert_eq!(control_points.difficulty_points.len(), 5);
@@ -255,8 +258,10 @@ fn overlapping_timing_points() {
             .map_or(TimingPoint::DEFAULT_BEAT_LEN, |point| point.beat_len)
     }
 
-    let control_points: ControlPoints =
-        rosu_map::from_path("./resources/overlapping-control-points.osu").unwrap();
+    let control_points =
+        rosu_map::from_path::<TimingPoints>("./resources/overlapping-control-points.osu")
+            .unwrap()
+            .control_points;
 
     assert_eq!(control_points.timing_points.len(), 4);
     assert_eq!(control_points.difficulty_points.len(), 3);
@@ -294,8 +299,10 @@ fn omit_bar_line_effect() {
             })
     }
 
-    let control_points: ControlPoints =
-        rosu_map::from_path("./resources/omit-barline-control-points.osu").unwrap();
+    let control_points =
+        rosu_map::from_path::<TimingPoints>("./resources/omit-barline-control-points.osu")
+            .unwrap()
+            .control_points;
 
     assert_eq!(control_points.timing_points.len(), 6);
     assert_eq!(control_points.effect_points.len(), 0);
@@ -318,8 +325,10 @@ fn timing_point_resets_speed_multiplier() {
             })
     }
 
-    let control_points: ControlPoints =
-        rosu_map::from_path("./resources/timingpoint-speedmultiplier-reset.osu").unwrap();
+    let control_points =
+        rosu_map::from_path::<TimingPoints>("./resources/timingpoint-speedmultiplier-reset.osu")
+            .unwrap()
+            .control_points;
 
     assert!((slider_velocity_at(&control_points, 0.0) - 0.5).abs() <= 0.1);
     assert!((slider_velocity_at(&control_points, 2000.0) - 1.0).abs() <= 0.1);
@@ -403,8 +412,10 @@ fn control_point_difficulty_change() {
             })
     }
 
-    let control_points: ControlPoints =
-        rosu_map::from_path("./resources/controlpoint-difficulty-multiplier.osu").unwrap();
+    let control_points =
+        rosu_map::from_path::<TimingPoints>("./resources/controlpoint-difficulty-multiplier.osu")
+            .unwrap()
+            .control_points;
 
     assert_eq!(slider_velocity_at(&control_points, 5.0), 1.0);
     assert_eq!(slider_velocity_at(&control_points, 1000.0), 10.0);
@@ -855,8 +866,9 @@ fn nan_control_points() {
             })
     }
 
-    let control_points: ControlPoints =
-        rosu_map::from_path("./resources/nan-control-points.osu").unwrap();
+    let control_points = rosu_map::from_path::<TimingPoints>("./resources/nan-control-points.osu")
+        .unwrap()
+        .control_points;
 
     assert_eq!(control_points.timing_points.len(), 1);
     assert_eq!(control_points.difficulty_points.len(), 2);

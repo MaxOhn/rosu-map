@@ -88,8 +88,8 @@ pub enum ParseGeneralError {
 
 /// The parsing state for [`General`] in [`DecodeBeatmap`].
 pub struct GeneralState {
-    version: FormatVersion,
-    general: General,
+    pub version: FormatVersion,
+    pub general: General,
 }
 
 impl DecodeState for GeneralState {

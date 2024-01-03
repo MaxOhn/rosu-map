@@ -2,10 +2,10 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     reader::DecoderError,
     section::{
-        general::{GameMode, GeneralKey, ParseGameModeError},
+        general::{CountdownType, GameMode, General, GeneralState, ParseGeneralError},
         hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     },
-    util::{KeyValue, ParseNumber, ParseNumberError, StrExt, MAX_PARSE_VALUE},
+    util::{ParseNumber, ParseNumberError, StrExt, MAX_PARSE_VALUE},
     {FormatVersion, ParseVersionError},
 };
 
@@ -13,6 +13,29 @@ use super::{
     DifficultyPoint, EffectFlags, EffectPoint, ParseEffectFlagsError, SamplePoint, TimeSignature,
     TimeSignatureError, TimingPoint,
 };
+
+/// Struct containing all data from a `.osu` file's `[TimingPoints]` and
+/// `[General]` section.
+pub struct TimingPoints {
+    // General
+    pub audio_file: String,
+    pub audio_lead_in: f64,
+    pub preview_time: i32,
+    pub default_sample_bank: SampleBank,
+    pub default_sample_volume: i32,
+    pub stack_leniency: f32,
+    pub mode: GameMode,
+    pub letterbox_in_breaks: bool,
+    pub special_style: bool,
+    pub widescreen_storyboard: bool,
+    pub epilepsy_warning: bool,
+    pub samples_match_playback_rate: bool,
+    pub countdown: CountdownType,
+    pub countdown_offset: i32,
+
+    // TimingPoints
+    pub control_points: ControlPoints,
+}
 
 /// Struct containing all data from a `.osu` file's `[TimingPoints]` section.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -155,17 +178,17 @@ impl ControlPoint for SamplePoint {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`ControlPoints`] can fail.
+/// All the ways that parsing a `.osu` file into [`TimingPoints`] can fail.
 #[derive(Debug, thiserror::Error)]
-pub enum ParseControlPointsError {
+pub enum ParseTimingPointsError {
     #[error("decoder error")]
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
     #[error("failed to parse effect flags")]
     EffectFlags(#[from] ParseEffectFlagsError),
-    #[error("failed to parse mode")]
-    Mode(#[from] ParseGameModeError),
+    #[error("failed to parse general section")]
+    General(#[from] ParseGeneralError),
     #[error("invalid line")]
     InvalidLine,
     #[error("failed to parse number")]
@@ -178,12 +201,9 @@ pub enum ParseControlPointsError {
     TimingControlPointNaN,
 }
 
-/// The parsing state for [`ControlPoints`] in [`DecodeBeatmap`].
-pub struct ControlPointsState {
-    version: FormatVersion,
-    default_sample_bank: SampleBank,
-    default_sample_volume: i32,
-    mode: GameMode,
+/// The parsing state for [`TimingPoints`] in [`DecodeBeatmap`].
+pub struct TimingPointsState {
+    general: GeneralState,
     pending_control_points_time: f64,
     pending_timing_point: Option<TimingPoint>,
     pending_difficulty_point: Option<DifficultyPoint>,
@@ -193,9 +213,9 @@ pub struct ControlPointsState {
 }
 
 trait Pending: Sized {
-    fn pending(state: &mut ControlPointsState) -> &mut Option<Self>;
+    fn pending(state: &mut TimingPointsState) -> &mut Option<Self>;
 
-    fn push_front(self, state: &mut ControlPointsState) {
+    fn push_front(self, state: &mut TimingPointsState) {
         let pending = Self::pending(state);
 
         if pending.is_none() {
@@ -203,36 +223,44 @@ trait Pending: Sized {
         }
     }
 
-    fn push_back(self, state: &mut ControlPointsState) {
+    fn push_back(self, state: &mut TimingPointsState) {
         *Self::pending(state) = Some(self);
     }
 }
 
 impl Pending for TimingPoint {
-    fn pending(state: &mut ControlPointsState) -> &mut Option<Self> {
+    fn pending(state: &mut TimingPointsState) -> &mut Option<Self> {
         &mut state.pending_timing_point
     }
 }
 
 impl Pending for DifficultyPoint {
-    fn pending(state: &mut ControlPointsState) -> &mut Option<Self> {
+    fn pending(state: &mut TimingPointsState) -> &mut Option<Self> {
         &mut state.pending_difficulty_point
     }
 }
 
 impl Pending for EffectPoint {
-    fn pending(state: &mut ControlPointsState) -> &mut Option<Self> {
+    fn pending(state: &mut TimingPointsState) -> &mut Option<Self> {
         &mut state.pending_effect_point
     }
 }
 
 impl Pending for SamplePoint {
-    fn pending(state: &mut ControlPointsState) -> &mut Option<Self> {
+    fn pending(state: &mut TimingPointsState) -> &mut Option<Self> {
         &mut state.pending_sample_point
     }
 }
 
-impl ControlPointsState {
+impl TimingPointsState {
+    pub fn version(&self) -> FormatVersion {
+        self.general.version
+    }
+
+    pub fn general(&self) -> &General {
+        &self.general.general
+    }
+
     fn add_control_point<P: Pending>(&mut self, time: f64, point: P, timing_change: bool) {
         if (time - self.pending_control_points_time).abs() >= f64::EPSILON {
             self.flush_pending_points();
@@ -266,13 +294,10 @@ impl ControlPointsState {
     }
 }
 
-impl DecodeState for ControlPointsState {
+impl DecodeState for TimingPointsState {
     fn create(version: FormatVersion) -> Self {
         Self {
-            version,
-            default_sample_bank: SampleBank::default(),
-            default_sample_volume: i32::default(),
-            mode: GameMode::default(),
+            general: GeneralState::create(version),
             pending_control_points_time: 0.0,
             pending_timing_point: None,
             pending_difficulty_point: None,
@@ -283,31 +308,38 @@ impl DecodeState for ControlPointsState {
     }
 }
 
-impl From<ControlPointsState> for ControlPoints {
-    fn from(mut state: ControlPointsState) -> Self {
+impl From<TimingPointsState> for TimingPoints {
+    fn from(mut state: TimingPointsState) -> Self {
         state.flush_pending_points();
 
-        state.control_points
+        let general: General = state.general.into();
+
+        Self {
+            audio_file: general.audio_file,
+            audio_lead_in: general.audio_lead_in,
+            preview_time: general.preview_time,
+            default_sample_bank: general.default_sample_bank,
+            default_sample_volume: general.default_sample_volume,
+            stack_leniency: general.stack_leniency,
+            mode: general.mode,
+            letterbox_in_breaks: general.letterbox_in_breaks,
+            special_style: general.special_style,
+            widescreen_storyboard: general.widescreen_storyboard,
+            epilepsy_warning: general.epilepsy_warning,
+            samples_match_playback_rate: general.samples_match_playback_rate,
+            countdown: general.countdown,
+            countdown_offset: general.countdown_offset,
+            control_points: state.control_points,
+        }
     }
 }
 
-impl DecodeBeatmap for ControlPoints {
-    type Error = ParseControlPointsError;
-    type State = ControlPointsState;
+impl DecodeBeatmap for TimingPoints {
+    type Error = ParseTimingPointsError;
+    type State = TimingPointsState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        let Ok(KeyValue { key, value }) = KeyValue::parse(line.trim_comment()) else {
-            return Ok(());
-        };
-
-        match key {
-            GeneralKey::SampleSet => state.default_sample_bank = value.parse()?,
-            GeneralKey::SampleVolume => state.default_sample_volume = value.parse_num()?,
-            GeneralKey::Mode => state.mode = value.parse()?,
-            _ => {}
-        }
-
-        Ok(())
+        General::parse_general(&mut state.general, line).map_err(ParseTimingPointsError::General)
     }
 
     fn parse_editor(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
@@ -332,9 +364,9 @@ impl DecodeBeatmap for ControlPoints {
         let (time, beat_len) = split
             .next()
             .zip(split.next())
-            .ok_or(ParseControlPointsError::InvalidLine)?;
+            .ok_or(ParseTimingPointsError::InvalidLine)?;
 
-        let time = time.trim().parse_num::<f64>()? + f64::from(state.version.offset());
+        let time = time.trim().parse_num::<f64>()? + f64::from(state.version().offset());
 
         // Manual `str::parse_num::<f64>` so that NaN does not cause an error
         let beat_len = beat_len
@@ -368,7 +400,7 @@ impl DecodeBeatmap for ControlPoints {
             .transpose()?
             .map(SampleBank::try_from)
             .and_then(Result::ok)
-            .unwrap_or(state.default_sample_bank);
+            .unwrap_or(state.general().default_sample_bank);
 
         let custom_sample_bank = split.next().map(i32::parse).transpose()?.unwrap_or(0);
 
@@ -376,7 +408,7 @@ impl DecodeBeatmap for ControlPoints {
             .next()
             .map(i32::parse)
             .transpose()?
-            .unwrap_or(state.default_sample_volume);
+            .unwrap_or(state.general().default_sample_volume);
 
         let timing_change = split
             .next()
@@ -397,7 +429,7 @@ impl DecodeBeatmap for ControlPoints {
 
         if timing_change {
             if beat_len.is_nan() {
-                return Err(ParseControlPointsError::TimingControlPointNaN);
+                return Err(ParseTimingPointsError::TimingControlPointNaN);
             }
 
             let timing = TimingPoint::new(time, beat_len, omit_first_bar_signature, time_signature);
@@ -412,7 +444,7 @@ impl DecodeBeatmap for ControlPoints {
 
         let mut effect = EffectPoint::new(time, kiai_mode);
 
-        if matches!(state.mode, GameMode::Taiko | GameMode::Mania) {
+        if matches!(state.general().mode, GameMode::Taiko | GameMode::Mania) {
             effect.scroll_speed = speed_multiplier;
         }
 

@@ -41,8 +41,8 @@ pub enum ParseDifficultyError {
 
 /// The parsing state for [`Difficulty`] in [`DecodeBeatmap`].
 pub struct DifficultyState {
-    has_approach_rate: bool,
-    difficulty: Difficulty,
+    pub has_approach_rate: bool,
+    pub difficulty: Difficulty,
 }
 
 impl DecodeState for DifficultyState {

@@ -5,13 +5,13 @@ use crate::{
     reader::DecoderError,
     section::{
         colors::{Color, Colors, ColorsState, CustomColor, ParseColorsError},
-        difficulty::{Difficulty, DifficultyState, ParseDifficultyError},
+        difficulty::{Difficulty, ParseDifficultyError},
         editor::{Editor, EditorState, ParseEditorError},
-        events::{BreakPeriod, Events, EventsState, ParseEventsError},
-        general::{CountdownType, GameMode, General, GeneralState, ParseGeneralError},
+        events::{BreakPeriod, Events},
+        general::{CountdownType, GameMode, General},
         hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError},
         metadata::{Metadata, MetadataState, ParseMetadataError},
-        timing_points::{ControlPoints, ControlPointsState, ParseControlPointsError},
+        timing_points::ControlPoints,
     },
     FormatVersion, ParseVersionError,
 };
@@ -163,47 +163,33 @@ pub enum ParseBeatmapError {
     Decoder(#[from] DecoderError),
     #[error("failed to parse format version")]
     FormatVersion(#[from] ParseVersionError),
-    #[error("failed to parse general section")]
-    General(#[from] ParseGeneralError),
     #[error("failed to parse editor section")]
     Editor(#[from] ParseEditorError),
     #[error("failed to parse metadata section")]
     Metadata(#[from] ParseMetadataError),
     #[error("failed to parse difficulty section")]
     Difficulty(#[from] ParseDifficultyError),
-    #[error("failed to parse events section")]
-    Events(#[from] ParseEventsError),
-    #[error("failed to parse timing points section")]
-    TimingPoints(#[from] ParseControlPointsError),
     #[error("failed to parse colors section")]
     Colors(#[from] ParseColorsError),
-    #[error("failed to parse hit objects section")]
+    #[error("failed to parse hit objects")]
     HitOjects(#[from] ParseHitObjectsError),
 }
 
 /// The parsing state for [`Beatmap`] in [`DecodeBeatmap`].
 pub struct BeatmapState {
-    version: FormatVersion,
-    general: GeneralState,
-    editor: EditorState,
-    metadata: MetadataState,
-    difficulty: DifficultyState,
-    events: EventsState,
-    control_points: ControlPointsState,
-    colors: ColorsState,
-    hit_objects: HitObjectsState,
+    pub version: FormatVersion,
+    pub editor: EditorState,
+    pub metadata: MetadataState,
+    pub colors: ColorsState,
+    pub hit_objects: HitObjectsState,
 }
 
 impl DecodeState for BeatmapState {
     fn create(version: FormatVersion) -> Self {
         Self {
             version,
-            general: GeneralState::create(version),
             editor: EditorState::create(version),
             metadata: MetadataState::create(version),
-            difficulty: DifficultyState::create(version),
-            events: EventsState::create(version),
-            control_points: ControlPointsState::create(version),
             colors: ColorsState::create(version),
             hit_objects: HitObjectsState::create(version),
         }
@@ -213,29 +199,25 @@ impl DecodeState for BeatmapState {
 impl From<BeatmapState> for Beatmap {
     #[allow(clippy::useless_conversion)]
     fn from(state: BeatmapState) -> Self {
-        let general: General = state.general.into();
         let editor: Editor = state.editor.into();
         let metadata: Metadata = state.metadata.into();
-        let difficulty: Difficulty = state.difficulty.into();
-        let events: Events = state.events.into();
-        let control_points: ControlPoints = state.control_points.into();
         let colors: Colors = state.colors.into();
         let hit_objects: HitObjects = state.hit_objects.into();
 
         Beatmap {
             format_version: state.version,
-            audio_file: general.audio_file,
-            audio_lead_in: general.audio_lead_in,
-            preview_time: general.preview_time,
-            stack_leniency: general.stack_leniency,
-            mode: general.mode,
-            letterbox_in_breaks: general.letterbox_in_breaks,
-            special_style: general.special_style,
-            widescreen_storyboard: general.widescreen_storyboard,
-            epilepsy_warning: general.epilepsy_warning,
-            samples_match_playback_rate: general.samples_match_playback_rate,
-            countdown: general.countdown,
-            countdown_offset: general.countdown_offset,
+            audio_file: hit_objects.audio_file,
+            audio_lead_in: hit_objects.audio_lead_in,
+            preview_time: hit_objects.preview_time,
+            stack_leniency: hit_objects.stack_leniency,
+            mode: hit_objects.mode,
+            letterbox_in_breaks: hit_objects.letterbox_in_breaks,
+            special_style: hit_objects.special_style,
+            widescreen_storyboard: hit_objects.widescreen_storyboard,
+            epilepsy_warning: hit_objects.epilepsy_warning,
+            samples_match_playback_rate: hit_objects.samples_match_playback_rate,
+            countdown: hit_objects.countdown,
+            countdown_offset: hit_objects.countdown_offset,
             bookmarks: editor.bookmarks,
             distance_spacing: editor.distance_spacing,
             beat_divisor: editor.beat_divisor,
@@ -251,15 +233,15 @@ impl From<BeatmapState> for Beatmap {
             tags: metadata.tags,
             beatmap_id: metadata.beatmap_id,
             beatmap_set_id: metadata.beatmap_set_id,
-            hp_drain_rate: difficulty.hp_drain_rate,
-            circle_size: difficulty.circle_size,
-            overall_difficulty: difficulty.overall_difficulty,
-            approach_rate: difficulty.approach_rate,
-            slider_multiplier: difficulty.slider_multiplier,
-            slider_tick_rate: difficulty.slider_tick_rate,
-            background_file: events.background_file,
-            breaks: events.breaks,
-            control_points,
+            hp_drain_rate: hit_objects.hp_drain_rate,
+            circle_size: hit_objects.circle_size,
+            overall_difficulty: hit_objects.overall_difficulty,
+            approach_rate: hit_objects.approach_rate,
+            slider_multiplier: hit_objects.slider_multiplier,
+            slider_tick_rate: hit_objects.slider_tick_rate,
+            background_file: hit_objects.background_file,
+            breaks: hit_objects.breaks,
+            control_points: hit_objects.control_points,
             custom_combo_colors: colors.custom_combo_colors,
             custom_colors: colors.custom_colors,
             hit_objects: hit_objects.hit_objects,
@@ -272,106 +254,38 @@ impl DecodeBeatmap for Beatmap {
     type State = BeatmapState;
 
     fn parse_general(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_general(&mut state.general, line)?;
-        Editor::parse_general(&mut state.editor, line)?;
-        Metadata::parse_general(&mut state.metadata, line)?;
-        Difficulty::parse_general(&mut state.difficulty, line)?;
-        Events::parse_general(&mut state.events, line)?;
-        ControlPoints::parse_general(&mut state.control_points, line)?;
-        Colors::parse_general(&mut state.colors, line)?;
-        HitObjects::parse_general(&mut state.hit_objects, line)?;
-
-        Ok(())
+        HitObjects::parse_general(&mut state.hit_objects, line)
+            .map_err(ParseBeatmapError::HitOjects)
     }
 
     fn parse_editor(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_editor(&mut state.general, line)?;
-        Editor::parse_editor(&mut state.editor, line)?;
-        Metadata::parse_editor(&mut state.metadata, line)?;
-        Difficulty::parse_editor(&mut state.difficulty, line)?;
-        Events::parse_editor(&mut state.events, line)?;
-        ControlPoints::parse_editor(&mut state.control_points, line)?;
-        Colors::parse_editor(&mut state.colors, line)?;
-        HitObjects::parse_editor(&mut state.hit_objects, line)?;
-
-        Ok(())
+        Editor::parse_editor(&mut state.editor, line).map_err(ParseBeatmapError::Editor)
     }
 
     fn parse_metadata(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_metadata(&mut state.general, line)?;
-        Editor::parse_metadata(&mut state.editor, line)?;
-        Metadata::parse_metadata(&mut state.metadata, line)?;
-        Difficulty::parse_metadata(&mut state.difficulty, line)?;
-        Events::parse_metadata(&mut state.events, line)?;
-        ControlPoints::parse_metadata(&mut state.control_points, line)?;
-        Colors::parse_metadata(&mut state.colors, line)?;
-        HitObjects::parse_metadata(&mut state.hit_objects, line)?;
-
-        Ok(())
+        Metadata::parse_metadata(&mut state.metadata, line).map_err(ParseBeatmapError::Metadata)
     }
 
     fn parse_difficulty(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_difficulty(&mut state.general, line)?;
-        Editor::parse_difficulty(&mut state.editor, line)?;
-        Metadata::parse_difficulty(&mut state.metadata, line)?;
-        Difficulty::parse_difficulty(&mut state.difficulty, line)?;
-        Events::parse_difficulty(&mut state.events, line)?;
-        ControlPoints::parse_difficulty(&mut state.control_points, line)?;
-        Colors::parse_difficulty(&mut state.colors, line)?;
-        HitObjects::parse_difficulty(&mut state.hit_objects, line)?;
-
-        Ok(())
+        HitObjects::parse_difficulty(&mut state.hit_objects, line)
+            .map_err(ParseBeatmapError::HitOjects)
     }
 
     fn parse_events(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_events(&mut state.general, line)?;
-        Editor::parse_events(&mut state.editor, line)?;
-        Metadata::parse_events(&mut state.metadata, line)?;
-        Difficulty::parse_events(&mut state.difficulty, line)?;
-        Events::parse_events(&mut state.events, line)?;
-        ControlPoints::parse_events(&mut state.control_points, line)?;
-        Colors::parse_events(&mut state.colors, line)?;
-        HitObjects::parse_events(&mut state.hit_objects, line)?;
-
-        Ok(())
+        HitObjects::parse_events(&mut state.hit_objects, line).map_err(ParseBeatmapError::HitOjects)
     }
 
     fn parse_timing_points(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_timing_points(&mut state.general, line)?;
-        Editor::parse_timing_points(&mut state.editor, line)?;
-        Metadata::parse_timing_points(&mut state.metadata, line)?;
-        Difficulty::parse_timing_points(&mut state.difficulty, line)?;
-        Events::parse_timing_points(&mut state.events, line)?;
-        ControlPoints::parse_timing_points(&mut state.control_points, line)?;
-        Colors::parse_timing_points(&mut state.colors, line)?;
-        HitObjects::parse_timing_points(&mut state.hit_objects, line)?;
-
-        Ok(())
+        HitObjects::parse_timing_points(&mut state.hit_objects, line)
+            .map_err(ParseBeatmapError::HitOjects)
     }
 
     fn parse_colors(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_colors(&mut state.general, line)?;
-        Editor::parse_colors(&mut state.editor, line)?;
-        Metadata::parse_colors(&mut state.metadata, line)?;
-        Difficulty::parse_colors(&mut state.difficulty, line)?;
-        Events::parse_colors(&mut state.events, line)?;
-        ControlPoints::parse_colors(&mut state.control_points, line)?;
-        Colors::parse_colors(&mut state.colors, line)?;
-        HitObjects::parse_colors(&mut state.hit_objects, line)?;
-
-        Ok(())
+        Colors::parse_colors(&mut state.colors, line).map_err(ParseBeatmapError::Colors)
     }
 
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        General::parse_hit_objects(&mut state.general, line)?;
-        Editor::parse_hit_objects(&mut state.editor, line)?;
-        Metadata::parse_hit_objects(&mut state.metadata, line)?;
-        Difficulty::parse_hit_objects(&mut state.difficulty, line)?;
-        Events::parse_hit_objects(&mut state.events, line)?;
-        ControlPoints::parse_hit_objects(&mut state.control_points, line)?;
-        Colors::parse_hit_objects(&mut state.colors, line)?;
-        HitObjects::parse_hit_objects(&mut state.hit_objects, line)?;
-
-        Ok(())
+        HitObjects::parse_hit_objects(&mut state.hit_objects, line)
+            .map_err(ParseBeatmapError::HitOjects)
     }
 }
