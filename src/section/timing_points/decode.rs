@@ -91,29 +91,29 @@ impl ControlPoints {
 
     /// Finds the [`SamplePoint`] that is active at the given time.
     pub fn sample_point_at(&self, time: f64) -> Option<&SamplePoint> {
-        self.sample_points
+        let i = self
+            .sample_points
             .binary_search_by(|probe| probe.time.total_cmp(&time))
-            .map_or_else(|i| i.checked_sub(1), Some)
-            .map(|i| &self.sample_points[i])
-            .or_else(|| self.sample_points.first())
+            .unwrap_or_else(|i| i.saturating_sub(1));
+
+        self.sample_points.get(i)
     }
 
     /// Finds the [`TimingPoint`] that is active at the given time.
     pub fn timing_point_at(&self, time: f64) -> Option<&TimingPoint> {
-        self.timing_points
+        let i = self
+            .timing_points
             .binary_search_by(|probe| probe.time.total_cmp(&time))
-            .map_or_else(|i| i.checked_sub(1), Some)
-            .map(|i| &self.timing_points[i])
-            .or_else(|| self.timing_points.first())
+            .unwrap_or_else(|i| i.saturating_sub(1));
+
+        self.timing_points.get(i)
     }
 
     /// Add a [`ControlPoint`] into its corresponding list.
     pub fn add<P: ControlPoint>(&mut self, point: P) {
-        if point.check_already_existing(self) {
-            return;
+        if !point.check_already_existing(self) {
+            point.add(self);
         }
-
-        point.add(self);
     }
 }
 
