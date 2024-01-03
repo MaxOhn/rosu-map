@@ -26,7 +26,7 @@ use super::{
 
 /// Struct containing all data from a `.osu` file's `[HitObjects]`, `[Events]`,
 /// `[Difficulty]`, `[TimingPoints]` and `[General]` section.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct HitObjects {
     // General
     pub audio_file: String,
@@ -61,6 +61,41 @@ pub struct HitObjects {
 
     // HitObjects
     pub hit_objects: Vec<HitObject>,
+}
+
+impl Default for HitObjects {
+    fn default() -> Self {
+        let difficulty = Difficulty::default();
+        let events = Events::default();
+        let timing_points = TimingPoints::default();
+
+        Self {
+            audio_file: timing_points.audio_file,
+            audio_lead_in: timing_points.audio_lead_in,
+            preview_time: timing_points.preview_time,
+            default_sample_bank: timing_points.default_sample_bank,
+            default_sample_volume: timing_points.default_sample_volume,
+            stack_leniency: timing_points.stack_leniency,
+            mode: timing_points.mode,
+            letterbox_in_breaks: timing_points.letterbox_in_breaks,
+            special_style: timing_points.special_style,
+            widescreen_storyboard: timing_points.widescreen_storyboard,
+            epilepsy_warning: timing_points.epilepsy_warning,
+            samples_match_playback_rate: timing_points.samples_match_playback_rate,
+            countdown: timing_points.countdown,
+            countdown_offset: timing_points.countdown_offset,
+            hp_drain_rate: difficulty.hp_drain_rate,
+            circle_size: difficulty.circle_size,
+            overall_difficulty: difficulty.overall_difficulty,
+            approach_rate: difficulty.approach_rate,
+            slider_multiplier: difficulty.slider_multiplier,
+            slider_tick_rate: difficulty.slider_tick_rate,
+            background_file: events.background_file,
+            breaks: events.breaks,
+            control_points: timing_points.control_points,
+            hit_objects: Vec::default(),
+        }
+    }
 }
 
 /// All the ways that parsing a `.osu` file into [`HitObjects`] can fail.

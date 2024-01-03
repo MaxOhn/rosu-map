@@ -5,10 +5,9 @@ use crate::{
     reader::DecoderError,
     section::{
         colors::{Color, Colors, ColorsState, CustomColor, ParseColorsError},
-        difficulty::{Difficulty, ParseDifficultyError},
         editor::{Editor, EditorState, ParseEditorError},
-        events::{BreakPeriod, Events},
-        general::{CountdownType, GameMode, General},
+        events::BreakPeriod,
+        general::{CountdownType, GameMode},
         hit_objects::{HitObject, HitObjects, HitObjectsState, ParseHitObjectsError},
         metadata::{Metadata, MetadataState, ParseMetadataError},
         timing_points::ControlPoints,
@@ -149,29 +148,25 @@ impl FromStr for Beatmap {
 
 impl Default for Beatmap {
     fn default() -> Self {
-        let general = General::default();
         let editor = Editor::default();
         let metadata = Metadata::default();
-        let difficulty = Difficulty::default();
-        let events = Events::default();
-        let control_points = ControlPoints::default();
         let colors = Colors::default();
         let hit_objects = HitObjects::default();
 
         Self {
-            format_version: FormatVersion(FormatVersion::LATEST),
-            audio_file: general.audio_file,
-            audio_lead_in: general.audio_lead_in,
-            preview_time: general.preview_time,
-            stack_leniency: general.stack_leniency,
-            mode: general.mode,
-            letterbox_in_breaks: general.letterbox_in_breaks,
-            special_style: general.special_style,
-            widescreen_storyboard: general.widescreen_storyboard,
-            epilepsy_warning: general.epilepsy_warning,
-            samples_match_playback_rate: general.samples_match_playback_rate,
-            countdown: general.countdown,
-            countdown_offset: general.countdown_offset,
+            format_version: FormatVersion::default(),
+            audio_file: hit_objects.audio_file,
+            audio_lead_in: hit_objects.audio_lead_in,
+            preview_time: hit_objects.preview_time,
+            stack_leniency: hit_objects.stack_leniency,
+            mode: hit_objects.mode,
+            letterbox_in_breaks: hit_objects.letterbox_in_breaks,
+            special_style: hit_objects.special_style,
+            widescreen_storyboard: hit_objects.widescreen_storyboard,
+            epilepsy_warning: hit_objects.epilepsy_warning,
+            samples_match_playback_rate: hit_objects.samples_match_playback_rate,
+            countdown: hit_objects.countdown,
+            countdown_offset: hit_objects.countdown_offset,
             bookmarks: editor.bookmarks,
             distance_spacing: editor.distance_spacing,
             beat_divisor: editor.beat_divisor,
@@ -187,15 +182,15 @@ impl Default for Beatmap {
             tags: metadata.tags,
             beatmap_id: metadata.beatmap_id,
             beatmap_set_id: metadata.beatmap_set_id,
-            hp_drain_rate: difficulty.hp_drain_rate,
-            circle_size: difficulty.circle_size,
-            overall_difficulty: difficulty.overall_difficulty,
-            approach_rate: difficulty.approach_rate,
-            slider_multiplier: difficulty.slider_multiplier,
-            slider_tick_rate: difficulty.slider_tick_rate,
-            background_file: events.background_file,
-            breaks: events.breaks,
-            control_points,
+            hp_drain_rate: hit_objects.hp_drain_rate,
+            circle_size: hit_objects.circle_size,
+            overall_difficulty: hit_objects.overall_difficulty,
+            approach_rate: hit_objects.approach_rate,
+            slider_multiplier: hit_objects.slider_multiplier,
+            slider_tick_rate: hit_objects.slider_tick_rate,
+            background_file: hit_objects.background_file,
+            breaks: hit_objects.breaks,
+            control_points: hit_objects.control_points,
             custom_combo_colors: colors.custom_combo_colors,
             custom_colors: colors.custom_colors,
             hit_objects: hit_objects.hit_objects,
@@ -208,8 +203,6 @@ impl Default for Beatmap {
 pub enum ParseBeatmapError {
     #[error("failed to parse colors section")]
     Colors(#[from] ParseColorsError),
-    #[error("failed to parse difficulty section")]
-    Difficulty(#[from] ParseDifficultyError),
     #[error("failed to parse editor section")]
     Editor(#[from] ParseEditorError),
     #[error("failed to parse hit objects")]

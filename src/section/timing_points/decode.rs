@@ -15,6 +15,7 @@ use super::{
 
 /// Struct containing all data from a `.osu` file's `[TimingPoints]` and
 /// `[General]` section.
+#[derive(Clone, Debug, PartialEq)]
 pub struct TimingPoints {
     // General
     pub audio_file: String,
@@ -34,6 +35,30 @@ pub struct TimingPoints {
 
     // TimingPoints
     pub control_points: ControlPoints,
+}
+
+impl Default for TimingPoints {
+    fn default() -> Self {
+        let general = General::default();
+
+        Self {
+            audio_file: general.audio_file,
+            audio_lead_in: general.audio_lead_in,
+            preview_time: general.preview_time,
+            default_sample_bank: general.default_sample_bank,
+            default_sample_volume: general.default_sample_volume,
+            stack_leniency: general.stack_leniency,
+            mode: general.mode,
+            letterbox_in_breaks: general.letterbox_in_breaks,
+            special_style: general.special_style,
+            widescreen_storyboard: general.widescreen_storyboard,
+            epilepsy_warning: general.epilepsy_warning,
+            samples_match_playback_rate: general.samples_match_playback_rate,
+            countdown: general.countdown,
+            countdown_offset: general.countdown_offset,
+            control_points: ControlPoints::default(),
+        }
+    }
 }
 
 /// Struct containing all data from a `.osu` file's `[TimingPoints]` section.
