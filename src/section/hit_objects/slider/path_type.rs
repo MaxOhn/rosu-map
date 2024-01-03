@@ -33,9 +33,11 @@ impl PathType {
     /// The string should be of the form `"B<optional integer>" | "L" | "P"`
     /// (without the `<>`). Otherwise, a catmull path type is returned.
     pub fn new_from_str(input: &str) -> Self {
-        match input.chars().next() {
+        let mut chars = input.chars();
+
+        match chars.next() {
             Some('B') => {
-                if let Ok(Some(degree)) = input[1..].parse().map(NonZeroI32::new) {
+                if let Ok(Some(degree)) = chars.as_str().parse().map(NonZeroI32::new) {
                     if degree.is_positive() {
                         return Self::new_b_spline(degree);
                     }

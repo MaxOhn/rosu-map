@@ -13,7 +13,7 @@ use crate::{
         general::{GameMode, GeneralKey},
         hit_objects::{
             hit_samples::{HitSampleInfo, HitSampleInfoName, HitSoundType},
-            HitObjectKind, HitObjectSlider, HitObjectType, PathType, SplineType,
+            CurveBuffers, HitObjectKind, HitObjectSlider, HitObjectType, PathType, SplineType,
         },
         metadata::MetadataKey,
         timing_points::{DifficultyPoint, EffectFlags, EffectPoint, SamplePoint, TimingPoint},
@@ -36,7 +36,7 @@ impl Beatmap {
     /// map.encode_to_path(path)?;
     /// # Ok(()) }
     /// ```
-    pub fn encode_to_path<P: AsRef<Path>>(&self, path: P) -> IoResult<()> {
+    pub fn encode_to_path<P: AsRef<Path>>(&mut self, path: P) -> IoResult<()> {
         let file = File::create(path)?;
         let writer = BufWriter::new(file);
 
@@ -56,7 +56,7 @@ impl Beatmap {
     /// let content: String = map.encode_to_string()?;
     /// # Ok(()) }
     /// ```
-    pub fn encode_to_string(&self) -> IoResult<String> {
+    pub fn encode_to_string(&mut self) -> IoResult<String> {
         let mut writer = Vec::with_capacity(4096);
         self.encode(&mut writer)?;
 
@@ -104,7 +104,7 @@ impl Beatmap {
     /// ```
     ///
     /// [`encode_to_path`]: Beatmap::encode_to_path
-    pub fn encode<W: Write>(&self, mut writer: W) -> IoResult<()> {
+    pub fn encode<W: Write>(&mut self, mut writer: W) -> IoResult<()> {
         writeln!(writer, "osu file format v{}", self.format_version.0)?;
 
         writer.write_all(b"\n")?;
@@ -453,14 +453,15 @@ impl Beatmap {
         Ok(())
     }
 
-    fn encode_hit_objects<W: Write>(&self, writer: &mut W) -> IoResult<()> {
+    fn encode_hit_objects<W: Write>(&mut self, writer: &mut W) -> IoResult<()> {
         if self.hit_objects.is_empty() {
             return Ok(());
         }
 
         writer.write_all(b"[HitObjects]\n")?;
+        let mut bufs = CurveBuffers::default();
 
-        for hit_object in self.hit_objects.iter() {
+        for hit_object in self.hit_objects.iter_mut() {
             let mut pos = Pos::new(256.0, 192.0);
 
             match self.mode {
@@ -491,13 +492,15 @@ impl Beatmap {
                 x = pos.x,
                 y = pos.y,
                 start_time = hit_object.start_time,
-                kind = i32::from(HitObjectType::from(hit_object)),
+                kind = i32::from(HitObjectType::from(&*hit_object)),
                 sound = u8::from(HitSoundType::from(hit_object.samples.as_slice())),
             )?;
 
             match hit_object.kind {
                 HitObjectKind::Circle(_) => {}
-                HitObjectKind::Slider(ref h) => add_path_data(writer, h, pos, self.mode)?,
+                HitObjectKind::Slider(ref mut h) => {
+                    add_path_data(writer, h, pos, self.mode, &mut bufs)?;
+                }
                 HitObjectKind::Spinner(ref h) => {
                     write!(writer, "{},", hit_object.start_time + h.duration)?;
                 }
@@ -574,9 +577,10 @@ enum ControlPoint<'a> {
 
 fn add_path_data<W: Write>(
     writer: &mut W,
-    slider: &HitObjectSlider,
+    slider: &mut HitObjectSlider,
     pos: Pos,
     mode: GameMode,
+    bufs: &mut CurveBuffers,
 ) -> IoResult<()> {
     let mut last_type = None;
 
@@ -636,9 +640,10 @@ fn add_path_data<W: Write>(
         }
     }
 
-    let Some(dist) = slider.path.expected_dist() else {
-        return Ok(());
-    };
+    let dist = slider
+        .path
+        .expected_dist()
+        .unwrap_or_else(|| slider.path.curve_with_bufs(bufs).dist());
 
     write!(
         writer,
