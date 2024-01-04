@@ -230,9 +230,9 @@ impl Beatmap {
         writeln!(
             writer,
             "{}: {}
-            {}: {}
-            {}: {}
-            {}: {}",
+{}: {}
+{}: {}
+{}: {}",
             EditorKey::DistanceSpacing,
             self.distance_spacing,
             EditorKey::BeatDivisor,
@@ -305,10 +305,6 @@ impl Beatmap {
     }
 
     fn encode_events<W: Write>(&self, writer: &mut W) -> IoResult<()> {
-        if self.background_file.is_empty() && self.breaks.is_empty() {
-            return Ok(());
-        }
-
         writer.write_all(b"[Events]\n")?;
 
         if !self.background_file.is_empty() {
@@ -362,10 +358,6 @@ impl Beatmap {
                 Ok(i) => groups[i].control = ControlPoint::Difficulty(difficulty),
                 Err(i) => groups.insert(i, ControlPointGroup::from(difficulty)),
             }
-        }
-
-        if groups.is_empty() {
-            return Ok(());
         }
 
         writer.write_all(b"[TimingPoints]\n")?;
@@ -433,10 +425,6 @@ impl Beatmap {
     }
 
     fn encode_colors<W: Write>(&self, writer: &mut W) -> IoResult<()> {
-        if self.custom_combo_colors.is_empty() {
-            return Ok(());
-        }
-
         writer.write_all(b"[Colours]\n")?;
 
         for (color, i) in self.custom_combo_colors.iter().zip(1..) {
@@ -454,10 +442,6 @@ impl Beatmap {
     }
 
     fn encode_hit_objects<W: Write>(&mut self, writer: &mut W) -> IoResult<()> {
-        if self.hit_objects.is_empty() {
-            return Ok(());
-        }
-
         writer.write_all(b"[HitObjects]\n")?;
         let mut bufs = CurveBuffers::default();
 
@@ -723,15 +707,12 @@ fn get_sample_bank<W: Write>(
 
     let sample_filename = samples
         .iter()
-        .find(|sample| match sample.name {
-            HitSampleInfoName::Default(_) => true,
-            HitSampleInfoName::File(ref filename) => !filename.is_empty(),
-        })
+        .find(|sample| matches!(sample.name, HitSampleInfoName::File(ref filename) if !filename.is_empty()))
         .map(HitSampleInfo::lookup_name);
 
     let mut volume = samples.first().map_or(100, |sample| sample.volume);
 
-    if mode == GameMode::Mania {
+    if mode != GameMode::Mania {
         custom_sample_bank = 0;
         volume = 0;
     }
