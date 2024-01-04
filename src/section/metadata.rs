@@ -5,7 +5,7 @@ use crate::{
 };
 
 /// Struct containing all data from a `.osu` file's `[Metadata]` section.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Metadata {
     pub title: String,
     pub title_unicode: String,
@@ -17,6 +17,23 @@ pub struct Metadata {
     pub tags: String,
     pub beatmap_id: i32,
     pub beatmap_set_id: i32,
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Self {
+            title: Default::default(),
+            title_unicode: Default::default(),
+            artist: Default::default(),
+            artist_unicode: Default::default(),
+            creator: Default::default(),
+            version: Default::default(),
+            source: Default::default(),
+            tags: Default::default(),
+            beatmap_id: -1,
+            beatmap_set_id: Default::default(),
+        }
+    }
 }
 
 section_keys! {

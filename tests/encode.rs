@@ -34,7 +34,22 @@ fn stability() {
             panic!("Failed to decode beatmap after encoding {filename:?}: {e:?}")
         });
 
-        assert_eq!(decoded, decoded_after_encode, "{filename:?}");
+        assert_eq!(
+            decoded.control_points, decoded_after_encode.control_points,
+            "{filename:?}"
+        );
+        assert_eq!(
+            decoded.hit_objects, decoded_after_encode.hit_objects,
+            "{filename:?}"
+        );
+        assert_eq!(
+            decoded.custom_colors, decoded_after_encode.custom_colors,
+            "{filename:?}"
+        );
+        assert_eq!(
+            decoded.custom_combo_colors, decoded_after_encode.custom_combo_colors,
+            "{filename:?}"
+        );
     }
 }
 

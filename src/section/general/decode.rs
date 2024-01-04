@@ -39,9 +39,9 @@ impl Default for General {
             mode: Default::default(),
             letterbox_in_breaks: Default::default(),
             special_style: Default::default(),
-            widescreen_storyboard: Default::default(),
+            widescreen_storyboard: false,
             epilepsy_warning: Default::default(),
-            samples_match_playback_rate: Default::default(),
+            samples_match_playback_rate: false,
             countdown: CountdownType::Normal,
             countdown_offset: Default::default(),
         }

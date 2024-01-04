@@ -5,13 +5,25 @@ use crate::{
 };
 
 /// Struct containing all data from a `.osu` file's `[Editor]` section.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Editor {
     pub bookmarks: Vec<i32>,
     pub distance_spacing: f64,
     pub beat_divisor: i32,
     pub grid_size: i32,
     pub timeline_zoom: f64,
+}
+
+impl Default for Editor {
+    fn default() -> Self {
+        Self {
+            bookmarks: Default::default(),
+            distance_spacing: 1.0,
+            beat_divisor: 4,
+            grid_size: Default::default(),
+            timeline_zoom: 1.0,
+        }
+    }
 }
 
 section_keys! {

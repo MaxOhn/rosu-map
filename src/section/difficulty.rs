@@ -5,7 +5,7 @@ use crate::{
 };
 
 /// Struct containing all data from a `.osu` file's `[Difficulty]` section.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Difficulty {
     pub hp_drain_rate: f32,
     pub circle_size: f32,
@@ -13,6 +13,19 @@ pub struct Difficulty {
     pub approach_rate: f32,
     pub slider_multiplier: f32,
     pub slider_tick_rate: f32,
+}
+
+impl Default for Difficulty {
+    fn default() -> Self {
+        Self {
+            hp_drain_rate: 5.0,
+            circle_size: 5.0,
+            overall_difficulty: 5.0,
+            approach_rate: 5.0,
+            slider_multiplier: 1.4,
+            slider_tick_rate: 1.0,
+        }
+    }
 }
 
 section_keys! {
