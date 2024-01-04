@@ -11,6 +11,7 @@ pub use self::{
     hold::HitObjectHold,
     slider::{
         curve::{BorrowedCurve, Curve, CurveBuffers},
+        event::{SliderEvent, SliderEventType, SliderEventsIter},
         path::{PathControlPoint, SliderPath},
         path_type::{PathType, SplineType},
         HitObjectSlider,

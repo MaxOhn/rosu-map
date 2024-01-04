@@ -5,6 +5,7 @@ use self::path::{PathControlPoint, SliderPath};
 use super::{hit_samples::HitSampleInfo, CurveBuffers};
 
 pub mod curve;
+pub mod event;
 pub mod path;
 pub mod path_type;
 
