@@ -16,7 +16,9 @@ use crate::{
             CurveBuffers, HitObjectKind, HitObjectSlider, HitObjectType, PathType, SplineType,
         },
         metadata::MetadataKey,
-        timing_points::{DifficultyPoint, EffectFlags, EffectPoint, SamplePoint, TimingPoint},
+        timing_points::{
+            ControlPoints, DifficultyPoint, EffectFlags, EffectPoint, SamplePoint, TimingPoint,
+        },
     },
     util::Pos,
 };
@@ -329,96 +331,122 @@ impl Beatmap {
         Ok(())
     }
 
-    fn encode_timing_points<W: Write>(&self, writer: &mut W) -> IoResult<()> {
+    fn encode_timing_points<W: Write>(&mut self, writer: &mut W) -> IoResult<()> {
+        fn output_control_point_at<W: Write>(
+            writer: &mut W,
+            props: &ControlPointProperties,
+            is_timing: bool,
+        ) -> IoResult<()> {
+            writeln!(
+                writer,
+                "{},{},{},{},{},{}",
+                props.timing_signature,
+                props.sample_bank,
+                props.custom_sample_bank,
+                props.sample_volume,
+                if is_timing { "1" } else { "0" },
+                props.effect_flags
+            )
+        }
+
+        let mut control_points = self.control_points.clone();
+        let mut bufs = CurveBuffers::default();
+        let mut last_sample = None;
+
+        let mut handle_samples = |samples: &[HitSampleInfo], end_time: f64| {
+            if samples.is_empty() {
+                return;
+            }
+
+            // We know the samples aren't empty so we can unwrap
+            let volume = samples.iter().map(|sample| sample.volume).max().unwrap();
+
+            let custom_idx = samples
+                .iter()
+                .map(|sample| sample.custom_sample_bank)
+                .max()
+                .unwrap();
+
+            let sample = SamplePoint {
+                time: end_time,
+                sample_bank: SamplePoint::DEFAULT_SAMPLE_BANK,
+                sample_volume: volume,
+                custom_sample_bank: custom_idx,
+            };
+
+            if !last_sample
+                .as_ref()
+                .is_some_and(|last| sample.is_redundant(last))
+            {
+                control_points.add(sample.clone());
+                last_sample = Some(sample);
+            }
+        };
+
+        for h in self.hit_objects.iter_mut() {
+            let end_time = h.end_time_with_bufs(&mut bufs);
+            // FIXME: respect order with samples coming from nested objects
+            handle_samples(&h.samples, end_time);
+
+            if let HitObjectKind::Slider(ref mut slider) = h.kind {
+                let _curve = slider.path.curve_with_bufs(&mut bufs);
+
+                for _nested_samples in slider.node_samples.iter() {
+                    // TODO
+                }
+            }
+        }
+
         let mut groups: Vec<_> = self
             .control_points
-            .sample_points
+            .timing_points
             .iter()
             .map(ControlPointGroup::from)
             .collect();
 
         groups.sort_unstable_by(|a, b| a.time.total_cmp(&b.time));
 
-        for effect in self.control_points.effect_points.iter() {
-            match groups.binary_search_by(|probe| probe.time.total_cmp(&effect.time)) {
-                Ok(i) => groups[i].effect = Some(effect),
-                Err(i) => groups.insert(i, ControlPointGroup::from(effect)),
-            }
-        }
+        let times = self
+            .control_points
+            .difficulty_points
+            .iter()
+            .map(|point| point.time)
+            .chain(control_points.effect_points.iter().map(|point| point.time))
+            .chain(control_points.sample_points.iter().map(|point| point.time));
 
-        for timing in self.control_points.timing_points.iter() {
-            match groups.binary_search_by(|probe| probe.time.total_cmp(&timing.time)) {
-                Ok(i) => groups[i].control = ControlPoint::Timing(timing),
-                Err(i) => groups.insert(i, ControlPointGroup::from(timing)),
-            }
-        }
-
-        for difficulty in self.control_points.difficulty_points.iter() {
-            match groups.binary_search_by(|probe| probe.time.total_cmp(&difficulty.time)) {
-                Ok(i) => groups[i].control = ControlPoint::Difficulty(difficulty),
-                Err(i) => groups.insert(i, ControlPointGroup::from(difficulty)),
+        for time in times {
+            if let Err(i) = groups.binary_search_by(|probe| probe.time.total_cmp(&time)) {
+                groups.insert(i, ControlPointGroup::new(time));
             }
         }
 
         writer.write_all(b"[TimingPoints]\n")?;
+        let mut last_props = ControlPointProperties::default();
 
         for group in groups {
-            let time = group.time;
+            let props = ControlPointProperties::new(
+                group.time,
+                &control_points,
+                &last_props,
+                group.timing.is_some(),
+            );
 
-            let beat_len = match group.control {
-                ControlPoint::Timing(point) => point.beat_len,
-                ControlPoint::Difficulty(point) => -100.0 * point.bpm_multiplier,
-                ControlPoint::None => 1.0,
-            };
-
-            let meter = match group.control {
-                ControlPoint::Timing(point) => point.time_signature.numerator.get(),
-                ControlPoint::Difficulty(_) | ControlPoint::None => 0,
-            };
-
-            let sample_set = group
-                .sample
-                .as_ref()
-                .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| {
-                    sample.sample_bank
-                }) as i32;
-
-            let sample_idx = group
-                .sample
-                .as_ref()
-                .map_or(SamplePoint::DEFAULT_CUSTOM_SAMPLE_BANK, |sample| {
-                    sample.custom_sample_bank
-                });
-
-            let volume = group
-                .sample
-                .as_ref()
-                .map_or(SamplePoint::DEFAULT_SAMPLE_VOLUME, |sample| {
-                    sample.sample_volume
-                });
-
-            let uninherited = match group.control {
-                ControlPoint::Timing(_) => 1,
-                ControlPoint::Difficulty(_) | ControlPoint::None => 0,
-            };
-
-            let mut effects = EffectFlags::NONE;
-
-            if group.effect.as_ref().is_some_and(|effect| effect.kiai) {
-                effects |= EffectFlags::KIAI;
+            if let Some(timing) = group.timing {
+                write!(writer, "{},{},", timing.time, timing.beat_len)?;
+                output_control_point_at(writer, &props, true)?;
+                last_props = ControlPointProperties {
+                    slider_velocity: 1.0,
+                    ..props
+                };
             }
 
-            if let ControlPoint::Timing(point) = group.control {
-                if point.omit_first_bar_line {
-                    effects |= EffectFlags::OMIT_FIRST_BAR_LINE;
-                }
+            if props.is_redundant(&last_props) {
+                continue;
             }
 
-            writeln!(
-                writer,
-                "{time},{beat_len},{meter},{sample_set},\
-                {sample_idx},{volume},{uninherited},{effects}"
-            )?;
+            write!(writer, "{},{},", group.time, -100.0 / props.slider_velocity)?;
+            output_control_point_at(writer, &props, false)?;
+            last_props = props;
         }
 
         Ok(())
@@ -502,61 +530,100 @@ impl Beatmap {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+struct ControlPointProperties {
+    slider_velocity: f64,
+    timing_signature: u32,
+    sample_bank: i32,
+    custom_sample_bank: i32,
+    sample_volume: i32,
+    effect_flags: u8,
+}
+
+impl ControlPointProperties {
+    fn new(
+        time: f64,
+        control_points: &ControlPoints,
+        last_props: &Self,
+        update_sample_bank: bool,
+    ) -> Self {
+        let timing = control_points.timing_point_at(time);
+        let difficulty = control_points.difficulty_point_at(time);
+        let sample = control_points
+            .sample_point_at(time)
+            .map_or_else(SamplePoint::default, SamplePoint::clone);
+        let effect = control_points.effect_point_at(time);
+
+        let mut tmp_hit_sample =
+            HitSampleInfo::new(HitSampleInfoName::File(String::new()), None, 0, 0);
+        sample.apply(&mut tmp_hit_sample);
+
+        let mut effect_flags = EffectFlags::NONE;
+
+        if effect.map_or(EffectPoint::DEFAULT_KIAI, |point| point.kiai) {
+            effect_flags |= EffectFlags::KIAI;
+        }
+
+        if timing.map_or(TimingPoint::DEFAULT_OMIT_FIRST_BAR_LINE, |point| {
+            point.omit_first_bar_line
+        }) {
+            effect_flags |= EffectFlags::OMIT_FIRST_BAR_LINE;
+        }
+
+        Self {
+            slider_velocity: difficulty.map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
+                point.slider_velocity
+            }),
+            timing_signature: timing
+                .map_or(TimingPoint::DEFAULT_TIME_SIGNATURE, |point| {
+                    point.time_signature
+                })
+                .numerator
+                .get(),
+            sample_bank: if update_sample_bank {
+                tmp_hit_sample.bank as i32
+            } else {
+                last_props.sample_bank
+            },
+            custom_sample_bank: if tmp_hit_sample.custom_sample_bank >= 0 {
+                tmp_hit_sample.custom_sample_bank
+            } else {
+                last_props.custom_sample_bank
+            },
+            sample_volume: tmp_hit_sample.volume,
+            effect_flags,
+        }
+    }
+
+    fn is_redundant(&self, other: &Self) -> bool {
+        self.slider_velocity == other.slider_velocity
+            && self.timing_signature == other.timing_signature
+            && self.sample_bank == other.sample_bank
+            && self.custom_sample_bank == other.custom_sample_bank
+            && self.sample_volume == other.sample_volume
+            && self.effect_flags == other.effect_flags
+    }
+}
+
+#[derive(Debug)]
 struct ControlPointGroup<'a> {
     time: f64,
-    effect: Option<&'a EffectPoint>,
-    sample: Option<&'a SamplePoint>,
-    control: ControlPoint<'a>,
+    timing: Option<&'a TimingPoint>,
 }
 
-impl<'a> From<&'a SamplePoint> for ControlPointGroup<'a> {
-    fn from(sample: &'a SamplePoint) -> Self {
-        Self {
-            time: sample.time,
-            effect: None,
-            sample: Some(sample),
-            control: ControlPoint::None,
-        }
-    }
-}
-
-impl<'a> From<&'a EffectPoint> for ControlPointGroup<'a> {
-    fn from(effect: &'a EffectPoint) -> Self {
-        Self {
-            time: effect.time,
-            effect: Some(effect),
-            sample: None,
-            control: ControlPoint::None,
-        }
-    }
-}
-
-impl<'a> From<&'a DifficultyPoint> for ControlPointGroup<'a> {
-    fn from(difficulty: &'a DifficultyPoint) -> Self {
-        Self {
-            time: difficulty.time,
-            effect: None,
-            sample: None,
-            control: ControlPoint::Difficulty(difficulty),
-        }
+impl<'a> ControlPointGroup<'a> {
+    fn new(time: f64) -> Self {
+        Self { time, timing: None }
     }
 }
 
 impl<'a> From<&'a TimingPoint> for ControlPointGroup<'a> {
-    fn from(timing: &'a TimingPoint) -> Self {
+    fn from(point: &'a TimingPoint) -> Self {
         Self {
-            time: timing.time,
-            effect: None,
-            sample: None,
-            control: ControlPoint::Timing(timing),
+            time: point.time,
+            timing: Some(point),
         }
     }
-}
-
-enum ControlPoint<'a> {
-    Timing(&'a TimingPoint),
-    Difficulty(&'a DifficultyPoint),
-    None,
 }
 
 fn add_path_data<W: Write>(
@@ -692,7 +759,8 @@ fn get_sample_bank<W: Write>(
                 HitSampleInfo::HIT_NORMAL | HitSampleInfoName::File(_)
             )
         })
-        .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| sample.bank);
+        .map(|sample| sample.bank)
+        .unwrap_or_default();
 
     write!(writer, "{}:{}", normal_bank as i32, add_bank as i32)?;
 

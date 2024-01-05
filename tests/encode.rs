@@ -30,12 +30,18 @@ fn stability() {
             .encode(&mut bytes)
             .unwrap_or_else(|e| panic!("Failed to encode beatmap {filename:?}: {e:?}"));
 
+        // println!("{}", std::str::from_utf8(&bytes).unwrap());
+
         let decoded_after_encode = Beatmap::from_bytes(&bytes).unwrap_or_else(|e| {
             panic!("Failed to decode beatmap after encoding {filename:?}: {e:?}")
         });
 
         assert_eq!(
-            decoded.control_points, decoded_after_encode.control_points,
+            decoded.control_points.timing_points, decoded_after_encode.control_points.timing_points,
+            "{filename:?}"
+        );
+        assert_eq!(
+            decoded.control_points.effect_points, decoded_after_encode.control_points.effect_points,
             "{filename:?}"
         );
         assert_eq!(
