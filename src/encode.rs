@@ -278,6 +278,10 @@ impl Beatmap {
             writeln!(writer, "{}: {}", MetadataKey::Source, &self.source)?;
         }
 
+        if !self.tags.is_empty() {
+            writeln!(writer, "{}: {}", MetadataKey::Tags, &self.tags)?;
+        }
+
         Ok(())
     }
 
@@ -455,6 +459,18 @@ impl Beatmap {
                 color.green(),
                 color.blue(),
                 color.alpha(),
+            )?;
+        }
+
+        for custom in self.custom_colors.iter() {
+            writeln!(
+                writer,
+                "{}: {},{},{},{}",
+                custom.name,
+                custom.color.red(),
+                custom.color.green(),
+                custom.color.blue(),
+                custom.color.alpha(),
             )?;
         }
 
