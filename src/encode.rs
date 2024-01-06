@@ -474,28 +474,11 @@ impl Beatmap {
         let mut bufs = CurveBuffers::default();
 
         for hit_object in self.hit_objects.iter_mut() {
-            let mut pos = Pos::new(256.0, 192.0);
-
-            match self.mode {
-                GameMode::Osu | GameMode::Catch => match hit_object.kind {
-                    HitObjectKind::Circle(ref h) => pos = h.pos,
-                    HitObjectKind::Slider(ref h) => pos = h.pos,
-                    HitObjectKind::Spinner(ref h) => pos = h.pos,
-                    HitObjectKind::Hold(ref h) => pos.x = h.pos_x,
-                },
-                GameMode::Taiko => {}
-                GameMode::Mania => {
-                    let total_columns = self.circle_size.max(1.0) as i32;
-
-                    let pos_x = match hit_object.kind {
-                        HitObjectKind::Circle(ref h) => h.pos.x,
-                        HitObjectKind::Slider(ref h) => h.pos.x,
-                        HitObjectKind::Spinner(ref h) => h.pos.x,
-                        HitObjectKind::Hold(ref h) => h.pos_x,
-                    };
-
-                    pos.x = (pos_x * (512.0 / total_columns as f32)).ceil() as i32 as f32;
-                }
+            let pos = match hit_object.kind {
+                HitObjectKind::Circle(ref h) => h.pos,
+                HitObjectKind::Slider(ref h) => h.pos,
+                HitObjectKind::Spinner(ref h) => h.pos,
+                HitObjectKind::Hold(ref h) => Pos::new(h.pos_x, 192.0),
             };
 
             write!(

@@ -30,8 +30,6 @@ fn stability() {
             .encode(&mut bytes)
             .unwrap_or_else(|e| panic!("Failed to encode beatmap {filename:?}: {e:?}"));
 
-        // println!("{}", std::str::from_utf8(&bytes).unwrap());
-
         let decoded_after_encode = Beatmap::from_bytes(&bytes).unwrap_or_else(|e| {
             panic!("Failed to decode beatmap after encoding {filename:?}: {e:?}")
         });
