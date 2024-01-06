@@ -15,6 +15,7 @@ pub struct Editor {
 }
 
 impl Default for Editor {
+    #[allow(clippy::default_trait_access)]
     fn default() -> Self {
         Self {
             bookmarks: Default::default(),

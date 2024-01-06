@@ -20,6 +20,7 @@ pub struct Metadata {
 }
 
 impl Default for Metadata {
+    #[allow(clippy::default_trait_access)]
     fn default() -> Self {
         Self {
             title: Default::default(),

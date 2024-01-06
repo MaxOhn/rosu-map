@@ -76,7 +76,7 @@ impl Iterator for SliderEventsIter<'_> {
         loop {
             match self.state {
                 SliderEventsIterState::Head => {
-                    self.state = if self.tick_dist != 0.0 {
+                    self.state = if self.tick_dist.abs() >= f64::EPSILON {
                         SliderEventsIterState::Ticks { span: 0 }
                     } else {
                         SliderEventsIterState::LastTick
@@ -172,11 +172,9 @@ fn generate_ticks(iter: &mut SliderEventsIter<'_>, span: i32) {
     let span_start_time = iter.start_time + f64::from(span) * iter.span_duration;
     let with_repeat = span < iter.span_count - 1;
 
-    if reversed {
-        if with_repeat {
-            let repeat = new_repeat_point(span, span_start_time, iter.span_duration);
-            iter.ticks.push(repeat);
-        }
+    if reversed && with_repeat {
+        let repeat = new_repeat_point(span, span_start_time, iter.span_duration);
+        iter.ticks.push(repeat);
     }
 
     let mut d = iter.tick_dist;

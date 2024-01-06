@@ -513,7 +513,7 @@ impl Beatmap {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default)]
 struct ControlPointProperties {
     slider_velocity: f64,
     timing_signature: u32,
@@ -579,7 +579,7 @@ impl ControlPointProperties {
     }
 
     fn is_redundant(&self, other: &Self) -> bool {
-        self.slider_velocity == other.slider_velocity
+        (self.slider_velocity - other.slider_velocity).abs() < f64::EPSILON
             && self.timing_signature == other.timing_signature
             && self.sample_bank == other.sample_bank
             && self.custom_sample_bank == other.custom_sample_bank
@@ -588,14 +588,13 @@ impl ControlPointProperties {
     }
 }
 
-#[derive(Debug)]
 struct ControlPointGroup<'a> {
     time: f64,
     timing: Option<&'a TimingPoint>,
 }
 
 impl<'a> ControlPointGroup<'a> {
-    fn new(time: f64) -> Self {
+    const fn new(time: f64) -> Self {
         Self { time, timing: None }
     }
 }
