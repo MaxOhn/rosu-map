@@ -275,12 +275,8 @@ impl Pending for SamplePoint {
 }
 
 impl TimingPointsState {
-    pub const fn version(&self) -> FormatVersion {
-        self.general.version
-    }
-
     pub const fn general(&self) -> &General {
-        &self.general.general
+        &self.general
     }
 
     fn add_control_point<P: Pending>(&mut self, time: f64, point: P, timing_change: bool) {
@@ -388,7 +384,7 @@ impl DecodeBeatmap for TimingPoints {
             .zip(split.next())
             .ok_or(ParseTimingPointsError::InvalidLine)?;
 
-        let time = time.trim().parse_num::<f64>()? + f64::from(state.version().offset());
+        let time = time.trim().parse_num::<f64>()?;
 
         // Manual `str::parse_num::<f64>` so that NaN does not cause an error
         let beat_len = beat_len

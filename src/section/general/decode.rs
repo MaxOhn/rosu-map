@@ -82,23 +82,11 @@ pub enum ParseGeneralError {
 }
 
 /// The parsing state for [`General`] in [`DecodeBeatmap`].
-pub struct GeneralState {
-    pub version: FormatVersion,
-    pub general: General,
-}
+pub type GeneralState = General;
 
 impl DecodeState for GeneralState {
-    fn create(version: FormatVersion) -> Self {
-        Self {
-            version,
-            general: General::default(),
-        }
-    }
-}
-
-impl From<GeneralState> for General {
-    fn from(state: GeneralState) -> Self {
-        state.general
+    fn create(_: FormatVersion) -> Self {
+        Self::default()
     }
 }
 
@@ -112,34 +100,24 @@ impl DecodeBeatmap for General {
         };
 
         match key {
-            GeneralKey::AudioFilename => state.general.audio_file = value.to_standardized_path(),
-            GeneralKey::AudioLeadIn => state.general.audio_lead_in = f64::from(i32::parse(value)?),
-            GeneralKey::PreviewTime => {
-                let time = i32::parse(value)?;
-
-                state.general.preview_time = if time == -1 {
-                    time
-                } else {
-                    time + state.version.offset()
-                };
-            }
-            GeneralKey::SampleSet => state.general.default_sample_bank = value.parse()?,
-            GeneralKey::SampleVolume => state.general.default_sample_volume = value.parse_num()?,
-            GeneralKey::StackLeniency => state.general.stack_leniency = value.parse_num()?,
-            GeneralKey::Mode => state.general.mode = value.parse()?,
-            GeneralKey::LetterboxInBreaks => {
-                state.general.letterbox_in_breaks = i32::parse(value)? == 1;
-            }
-            GeneralKey::SpecialStyle => state.general.special_style = i32::parse(value)? == 1,
+            GeneralKey::AudioFilename => state.audio_file = value.to_standardized_path(),
+            GeneralKey::AudioLeadIn => state.audio_lead_in = f64::from(i32::parse(value)?),
+            GeneralKey::PreviewTime => state.preview_time = i32::parse(value)?,
+            GeneralKey::SampleSet => state.default_sample_bank = value.parse()?,
+            GeneralKey::SampleVolume => state.default_sample_volume = value.parse_num()?,
+            GeneralKey::StackLeniency => state.stack_leniency = value.parse_num()?,
+            GeneralKey::Mode => state.mode = value.parse()?,
+            GeneralKey::LetterboxInBreaks => state.letterbox_in_breaks = i32::parse(value)? == 1,
+            GeneralKey::SpecialStyle => state.special_style = i32::parse(value)? == 1,
             GeneralKey::WidescreenStoryboard => {
-                state.general.widescreen_storyboard = i32::parse(value)? == 1;
+                state.widescreen_storyboard = i32::parse(value)? == 1;
             }
-            GeneralKey::EpilepsyWarning => state.general.epilepsy_warning = i32::parse(value)? == 1,
+            GeneralKey::EpilepsyWarning => state.epilepsy_warning = i32::parse(value)? == 1,
             GeneralKey::SamplesMatchPlaybackRate => {
-                state.general.samples_match_playback_rate = i32::parse(value)? == 1;
+                state.samples_match_playback_rate = i32::parse(value)? == 1;
             }
-            GeneralKey::Countdown => state.general.countdown = value.parse()?,
-            GeneralKey::CountdownOffset => state.general.countdown_offset = value.parse_num()?,
+            GeneralKey::Countdown => state.countdown = value.parse()?,
+            GeneralKey::CountdownOffset => state.countdown_offset = value.parse_num()?,
         }
 
         Ok(())

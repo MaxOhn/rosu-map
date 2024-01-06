@@ -137,10 +137,6 @@ pub struct HitObjectsState {
 }
 
 impl HitObjectsState {
-    pub const fn version(&self) -> FormatVersion {
-        self.timing_points.version()
-    }
-
     pub const fn difficulty(&self) -> &Difficulty {
         &self.difficulty.difficulty
     }
@@ -498,8 +494,6 @@ impl DecodeBeatmap for HitObjects {
     // It's preferred to keep the code in-sync with osu!lazer without refactoring.
     #[allow(clippy::too_many_lines)]
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
-        let offset = f64::from(state.version().offset());
-
         let mut split = line.trim_comment().split(',');
 
         let (Some(x), Some(y), Some(start_time), Some(kind), Some(sound_type)) = (
@@ -518,7 +512,7 @@ impl DecodeBeatmap for HitObjects {
         };
 
         let start_time_raw = f64::parse(start_time)?;
-        let start_time = start_time_raw + offset;
+        let start_time = start_time_raw;
         let mut hit_object_type: HitObjectType = kind.parse()?;
 
         let combo_offset = (hit_object_type & HitObjectType::COMBO_OFFSET) >> 4;
@@ -620,7 +614,7 @@ impl DecodeBeatmap for HitObjects {
                 .ok_or(ParseHitObjectsError::InvalidLine)?
                 .parse_num::<f64>()?;
 
-            let duration = (duration + offset - start_time).max(0.0);
+            let duration = (duration - start_time).max(0.0);
 
             if let Some(s) = split.next() {
                 bank_info.read_custom_sample_banks(s.split(':'))?;
@@ -651,7 +645,7 @@ impl DecodeBeatmap for HitObjects {
 
             let hold = HitObjectHold {
                 pos_x: pos.x,
-                duration: end_time + offset - start_time,
+                duration: end_time - start_time,
             };
 
             HitObjectKind::Hold(hold)

@@ -29,16 +29,6 @@ impl FormatVersion {
 
         ControlFlow::Break(res)
     }
-
-    pub(crate) const fn offset(self) -> i32 {
-        const EARLY_VERSION_TIMING_OFFSET: i32 = 24;
-
-        if self.0 < 5 {
-            EARLY_VERSION_TIMING_OFFSET
-        } else {
-            0
-        }
-    }
 }
 
 impl Default for FormatVersion {

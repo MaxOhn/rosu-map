@@ -25,23 +25,11 @@ pub enum ParseEventsError {
 }
 
 /// The parsing state for [`Events`] in [`DecodeBeatmap`].
-pub struct EventsState {
-    version: FormatVersion,
-    events: Events,
-}
+pub type EventsState = Events;
 
 impl DecodeState for EventsState {
-    fn create(version: FormatVersion) -> Self {
-        Self {
-            version,
-            events: Events::default(),
-        }
-    }
-}
-
-impl From<EventsState> for Events {
-    fn from(state: EventsState) -> Self {
-        state.events
+    fn create(_: FormatVersion) -> Self {
+        Self::default()
     }
 }
 
@@ -76,8 +64,8 @@ impl DecodeBeatmap for Events {
 
         match event_type.parse()? {
             EventType::Sprite => {
-                if state.events.background_file.is_empty() {
-                    state.events.background_file = split
+                if state.background_file.is_empty() {
+                    state.background_file = split
                         .next()
                         .ok_or(ParseEventsError::InvalidLine)?
                         .clean_filename();
@@ -98,17 +86,16 @@ impl DecodeBeatmap for Events {
                     ];
 
                     if !VIDEO_EXTENSIONS.contains(&extension) {
-                        state.events.background_file = filename;
+                        state.background_file = filename;
                     }
                 }
             }
-            EventType::Background => state.events.background_file = event_params.clean_filename(),
+            EventType::Background => state.background_file = event_params.clean_filename(),
             EventType::Break => {
-                let offset = f64::from(state.version.offset());
-                let start_time = f64::parse(start_time)? + offset;
-                let end_time = start_time.max(f64::parse(event_params)? + offset);
+                let start_time = f64::parse(start_time)?;
+                let end_time = start_time.max(f64::parse(event_params)?);
 
-                state.events.breaks.push(BreakPeriod {
+                state.breaks.push(BreakPeriod {
                     start_time,
                     end_time,
                 });
