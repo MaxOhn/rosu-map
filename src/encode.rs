@@ -32,7 +32,7 @@ impl Beatmap {
     /// ```no_run
     /// # use rosu_map::Beatmap;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = /* ... */
+    /// let mut map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let path = "./maps/123456.osu";
     /// map.encode_to_path(path)?;
@@ -53,7 +53,7 @@ impl Beatmap {
     /// ```
     /// # use rosu_map::Beatmap;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = /* ... */
+    /// let mut map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let content: String = map.encode_to_string()?;
     /// # Ok(()) }
@@ -78,7 +78,7 @@ impl Beatmap {
     /// # use rosu_map::Beatmap;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = /* ... */
+    /// let mut map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let path = "./maps/123456.osu";
     /// let file = File::create(path)?;
@@ -93,7 +93,7 @@ impl Beatmap {
     /// ```
     /// # use rosu_map::Beatmap;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let map: Beatmap = /* ... */
+    /// let mut map: Beatmap = /* ... */
     /// # Beatmap::default();
     /// let mut bytes: Vec<u8> = Vec::with_capacity(2048);
     ///
@@ -388,17 +388,10 @@ impl Beatmap {
             // FIXME: respect order with samples coming from nested objects
             handle_samples(&h.samples, end_time);
 
-            if let HitObjectKind::Slider(ref mut slider) = h.kind {
-                let _curve = slider.path.curve_with_bufs(&mut bufs);
-
-                for _nested_samples in slider.node_samples.iter() {
-                    // TODO
-                }
-            }
+            // TODO: handle samples of nested objects
         }
 
-        let mut groups: Vec<_> = self
-            .control_points
+        let mut groups: Vec<_> = control_points
             .timing_points
             .iter()
             .map(ControlPointGroup::from)
@@ -406,8 +399,7 @@ impl Beatmap {
 
         groups.sort_unstable_by(|a, b| a.time.total_cmp(&b.time));
 
-        let times = self
-            .control_points
+        let times = control_points
             .difficulty_points
             .iter()
             .map(|point| point.time)
