@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::section::hit_objects::hit_samples::{HitSampleInfo, SampleBank};
+use crate::section::hit_objects::hit_samples::{HitSampleInfo, HitSampleInfoName, SampleBank};
 
 #[derive(Clone, Debug, PartialEq)]
 /// Audio-related info about this control point.
@@ -37,23 +37,37 @@ impl SamplePoint {
     }
 
     pub fn apply(&self, sample: &mut HitSampleInfo) {
-        if sample.custom_sample_bank == 0 {
-            sample.custom_sample_bank = self.custom_sample_bank;
+        if matches!(sample.name, HitSampleInfoName::Default(_)) {
+            if sample.custom_sample_bank == 0 {
+                sample.custom_sample_bank = self.custom_sample_bank;
 
-            if sample.custom_sample_bank >= 2 {
-                // SAFETY: The value is guaranteed to be >= 2
-                sample.suffix =
-                    Some(unsafe { NonZeroU32::new_unchecked(sample.custom_sample_bank as u32) });
+                if sample.custom_sample_bank >= 2 {
+                    // SAFETY: The value is guaranteed to be >= 2
+                    sample.suffix = Some(unsafe {
+                        NonZeroU32::new_unchecked(sample.custom_sample_bank as u32)
+                    });
+                }
             }
-        }
 
-        if sample.volume == 0 {
-            sample.volume = self.sample_volume;
-        }
+            if sample.volume == 0 {
+                sample.volume = self.sample_volume;
+            }
 
-        if !sample.bank_specified {
-            sample.bank = self.sample_bank;
-            sample.bank_specified = true;
+            if !sample.bank_specified {
+                sample.bank = self.sample_bank;
+                sample.bank_specified = true;
+            }
+        } else {
+            sample.bank = SamplePoint::DEFAULT_SAMPLE_BANK;
+            sample.suffix = None;
+
+            if sample.volume == 0 {
+                sample.volume = self.sample_volume;
+            }
+
+            sample.custom_sample_bank = 1;
+            sample.bank_specified = false;
+            sample.is_layered = false;
         }
     }
 }
