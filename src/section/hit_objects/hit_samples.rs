@@ -273,7 +273,7 @@ impl SampleBankInfo {
         &mut self,
         mut split: Split<'_, char>,
     ) -> Result<(), ParseSampleBankInfoError> {
-        let Some(first) = split.next() else {
+        let Some(first) = split.next().filter(|s| !s.is_empty()) else {
             return Ok(());
         };
 
