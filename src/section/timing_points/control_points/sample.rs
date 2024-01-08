@@ -16,7 +16,7 @@ impl SamplePoint {
     pub const DEFAULT_SAMPLE_VOLUME: i32 = 100;
     pub const DEFAULT_CUSTOM_SAMPLE_BANK: i32 = 0;
 
-    pub const fn new(
+    pub fn new(
         time: f64,
         sample_bank: SampleBank,
         sample_volume: i32,
@@ -25,7 +25,7 @@ impl SamplePoint {
         Self {
             time,
             sample_bank,
-            sample_volume,
+            sample_volume: sample_volume.clamp(0, 100),
             custom_sample_bank,
         }
     }
@@ -50,7 +50,7 @@ impl SamplePoint {
             }
 
             if sample.volume == 0 {
-                sample.volume = self.sample_volume;
+                sample.volume = self.sample_volume.clamp(0, 100);
             }
 
             if !sample.bank_specified {
@@ -62,7 +62,7 @@ impl SamplePoint {
             sample.suffix = None;
 
             if sample.volume == 0 {
-                sample.volume = self.sample_volume;
+                sample.volume = self.sample_volume.clamp(0, 100);
             }
 
             sample.custom_sample_bank = 1;
