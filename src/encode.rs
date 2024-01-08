@@ -2,6 +2,7 @@ use std::{
     fs::File,
     io::{BufWriter, Error as IoError, ErrorKind, Result as IoResult, Write},
     path::Path,
+    slice,
 };
 
 use crate::{
@@ -623,17 +624,26 @@ fn add_path_data<W: Write>(
     bufs: &mut CurveBuffers,
 ) -> IoResult<()> {
     let mut last_type = None;
+    let control_points = slider.path.control_points();
 
-    for i in 0..slider.path.control_points().len() {
-        let point = slider.path.control_points()[i];
+    let separator = |i: usize| {
+        if i == control_points.len() - 1 {
+            b','
+        } else {
+            b'|'
+        }
+    };
+
+    for i in 0..control_points.len() {
+        let point = control_points[i];
 
         if let Some(path_type) = point.path_type {
             let mut needs_explicit_segment =
                 point.path_type != last_type || point.path_type == Some(PathType::PERFECT_CURVE);
 
             if i > 1 {
-                let p1 = pos + slider.path.control_points()[i - 1].pos;
-                let p2 = pos + slider.path.control_points()[i - 2].pos;
+                let p1 = pos + control_points[i - 1].pos;
+                let p2 = pos + control_points[i - 2].pos;
 
                 if p1.x as i32 == p2.x as i32 && p1.y as i32 == p2.y as i32 {
                     needs_explicit_segment = true;
@@ -644,15 +654,19 @@ fn add_path_data<W: Write>(
                 match path_type.kind {
                     SplineType::BSpline => {
                         if let Some(degree) = path_type.degree {
-                            write!(writer, "B{degree}|")?;
+                            write!(writer, "B{degree}")?;
                         } else {
-                            write!(writer, "B|")?;
+                            writer.write_all(b"B")?;
                         }
                     }
-                    SplineType::Catmull => writer.write_all(b"C|")?,
-                    SplineType::PerfectCurve => writer.write_all(b"P|")?,
-                    SplineType::Linear => writer.write_all(b"L|")?,
+                    SplineType::Catmull => writer.write_all(b"C")?,
+                    SplineType::PerfectCurve => writer.write_all(b"P")?,
+                    SplineType::Linear => writer.write_all(b"L")?,
                 }
+
+                // Beatmaps such as /b/1027526 have no control points so the
+                // path type needs to be followed by `,` instead of `|`.
+                writer.write_all(slice::from_ref(&separator(i)))?;
 
                 last_type = Some(path_type);
             } else {
@@ -671,11 +685,7 @@ fn add_path_data<W: Write>(
                 "{x}:{y}{count}",
                 x = pos.x + point.pos.x,
                 y = pos.y + point.pos.y,
-                count = if i == slider.path.control_points().len() - 1 {
-                    ','
-                } else {
-                    '|'
-                }
+                count = separator(i) as char,
             )?;
         }
     }
