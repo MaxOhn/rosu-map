@@ -34,7 +34,7 @@ impl Default for General {
             audio_lead_in: Default::default(),
             preview_time: -1,
             default_sample_bank: Default::default(),
-            default_sample_volume: Default::default(),
+            default_sample_volume: 100,
             stack_leniency: 0.7,
             mode: Default::default(),
             letterbox_in_breaks: Default::default(),

@@ -275,10 +275,6 @@ impl Pending for SamplePoint {
 }
 
 impl TimingPointsState {
-    pub const fn general(&self) -> &General {
-        &self.general
-    }
-
     fn add_control_point<P: Pending>(&mut self, time: f64, point: P, timing_change: bool) {
         if (time - self.pending_control_points_time).abs() >= f64::EPSILON {
             self.flush_pending_points();
@@ -418,7 +414,7 @@ impl DecodeBeatmap for TimingPoints {
             .transpose()?
             .map(SampleBank::try_from)
             .and_then(Result::ok)
-            .unwrap_or(state.general().default_sample_bank);
+            .unwrap_or(state.general.default_sample_bank);
 
         let custom_sample_bank = split.next().map(i32::parse).transpose()?.unwrap_or(0);
 
@@ -426,7 +422,7 @@ impl DecodeBeatmap for TimingPoints {
             .next()
             .map(i32::parse)
             .transpose()?
-            .unwrap_or(state.general().default_sample_volume);
+            .unwrap_or(state.general.default_sample_volume);
 
         let timing_change = split
             .next()
@@ -462,7 +458,7 @@ impl DecodeBeatmap for TimingPoints {
 
         let mut effect = EffectPoint::new(time, kiai_mode);
 
-        if matches!(state.general().mode, GameMode::Taiko | GameMode::Mania) {
+        if matches!(state.general.mode, GameMode::Taiko | GameMode::Mania) {
             effect.scroll_speed = speed_multiplier;
         }
 

@@ -545,8 +545,7 @@ impl ControlPointProperties {
             .map_or_else(SamplePoint::default, SamplePoint::clone);
         let effect = control_points.effect_point_at(time);
 
-        let mut tmp_hit_sample =
-            HitSampleInfo::new(HitSampleInfoName::File(String::new()), None, 0, 0);
+        let mut tmp_hit_sample = HitSampleInfo::new(HitSampleInfo::HIT_NORMAL, None, 0, 0);
         sample.apply(&mut tmp_hit_sample);
 
         let mut effect_flags = EffectFlags::NONE;
