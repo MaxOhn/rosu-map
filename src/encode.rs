@@ -748,7 +748,8 @@ fn get_sample_bank<W: Write>(
     let normal_bank = samples
         .iter()
         .find(|sample| sample.name == HitSampleInfo::HIT_NORMAL)
-        .map_or(SamplePoint::DEFAULT_SAMPLE_BANK, |sample| sample.bank);
+        .map(|sample| sample.bank)
+        .unwrap_or_default();
 
     let add_bank = samples
         .iter()
