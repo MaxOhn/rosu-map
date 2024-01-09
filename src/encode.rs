@@ -14,7 +14,8 @@ use crate::{
         general::{GameMode, GeneralKey},
         hit_objects::{
             hit_samples::{HitSampleInfo, HitSampleInfoName, HitSoundType},
-            CurveBuffers, HitObjectKind, HitObjectSlider, HitObjectType, PathType, SplineType,
+            CurveBuffers, HitObjectKind, HitObjectSlider, HitObjectType, PathType, SliderEventType,
+            SliderEventsIter, SplineType, BASE_SCORING_DIST,
         },
         metadata::MetadataKey,
         timing_points::{
@@ -355,10 +356,11 @@ impl Beatmap {
         }
 
         let mut control_points = self.control_points.clone();
-        let mut bufs = CurveBuffers::default();
-        let mut last_sample = None;
+        let mut ticks = Vec::new();
+        let mut curve_bufs = CurveBuffers::default();
+        let mut collected_samples = Vec::with_capacity(self.hit_objects.len() * 2);
 
-        let mut handle_samples = |samples: &[HitSampleInfo], end_time: f64| {
+        let mut collect_sample = |samples: &[HitSampleInfo], end_time: f64| {
             if samples.is_empty() {
                 return;
             }
@@ -379,21 +381,160 @@ impl Beatmap {
                 custom_sample_bank: custom_idx,
             };
 
-            if !last_sample
-                .as_ref()
-                .is_some_and(|last| sample.is_redundant(last))
-            {
-                control_points.add(sample.clone());
-                last_sample = Some(sample);
-            }
+            collected_samples.push(sample);
         };
 
         for h in self.hit_objects.iter_mut() {
-            let end_time = h.end_time_with_bufs(&mut bufs);
-            // FIXME: respect order with samples coming from nested objects
-            handle_samples(&h.samples, end_time);
+            let end_time = h.end_time_with_bufs(&mut curve_bufs);
+            collect_sample(&h.samples, end_time);
 
-            // TODO: handle samples of nested objects
+            // Emitting samples for nested objects
+            match h.kind {
+                HitObjectKind::Circle(_) | HitObjectKind::Spinner(_) => {}
+                HitObjectKind::Slider(ref mut slider) => match self.mode {
+                    GameMode::Osu => {
+                        let beat_len = self
+                            .control_points
+                            .timing_point_at(h.start_time)
+                            .map_or(TimingPoint::DEFAULT_BEAT_LEN, |point| point.beat_len);
+
+                        let (slider_velocity, generate_ticks) = self
+                            .control_points
+                            .difficulty_point_at(h.start_time)
+                            .map_or(
+                                (
+                                    DifficultyPoint::DEFAULT_SLIDER_VELOCITY,
+                                    DifficultyPoint::DEFAULT_GENERATE_TICKS,
+                                ),
+                                |point| (point.slider_velocity, point.generate_ticks),
+                            );
+
+                        let tick_dist_multiplier = if self.format_version < 8 {
+                            slider_velocity.recip()
+                        } else {
+                            1.0
+                        };
+
+                        let scoring_dist = slider.velocity * beat_len;
+
+                        let tick_dist = if generate_ticks {
+                            scoring_dist / f64::from(self.slider_tick_rate) * tick_dist_multiplier
+                        } else {
+                            f64::INFINITY
+                        };
+
+                        let dist = slider.path.curve_with_bufs(&mut curve_bufs).dist();
+                        let span_count = slider.span_count();
+                        let span_duration =
+                            slider.duration_with_bufs(&mut curve_bufs) / f64::from(span_count);
+
+                        let events = SliderEventsIter::new(
+                            h.start_time,
+                            span_duration,
+                            slider.velocity,
+                            tick_dist,
+                            dist,
+                            span_count,
+                            &mut ticks,
+                        );
+
+                        for event in events {
+                            match event.kind {
+                                SliderEventType::Tick | SliderEventType::LastTick => {}
+                                SliderEventType::Head => {
+                                    let samples = slider.node_samples.first().unwrap_or(&h.samples);
+                                    collect_sample(samples, event.time);
+                                }
+                                SliderEventType::Repeat => {
+                                    let samples = slider
+                                        .node_samples
+                                        .get((event.span_idx + 1) as usize)
+                                        .unwrap_or(&h.samples);
+
+                                    collect_sample(samples, event.time);
+                                }
+                                SliderEventType::Tail => {
+                                    let samples = slider
+                                        .node_samples
+                                        .get((slider.repeat_count + 1) as usize)
+                                        .unwrap_or(&h.samples);
+
+                                    collect_sample(samples, event.time);
+                                }
+                            }
+                        }
+                    }
+                    GameMode::Taiko => {} // FIXME: convert slider to drumroll
+                    GameMode::Catch => {
+                        let slider_velocity = self
+                            .control_points
+                            .difficulty_point_at(h.start_time)
+                            .map_or(DifficultyPoint::DEFAULT_SLIDER_VELOCITY, |point| {
+                                point.slider_velocity
+                            });
+
+                        let tick_dist_multiplier = if self.format_version < 8 {
+                            slider_velocity.recip()
+                        } else {
+                            1.0
+                        };
+
+                        let tick_dist_factor = f64::from(BASE_SCORING_DIST)
+                            * f64::from(self.slider_multiplier)
+                            / f64::from(self.slider_tick_rate);
+
+                        let tick_dist = tick_dist_factor * tick_dist_multiplier;
+
+                        let dist = slider.path.curve_with_bufs(&mut curve_bufs).dist();
+                        let span_count = slider.span_count();
+                        let span_duration =
+                            slider.duration_with_bufs(&mut curve_bufs) / f64::from(span_count);
+
+                        let events = SliderEventsIter::new(
+                            h.start_time,
+                            span_duration,
+                            slider.velocity,
+                            tick_dist,
+                            dist,
+                            span_count,
+                            &mut ticks,
+                        );
+
+                        let mut node_idx = 0;
+
+                        for event in events {
+                            match event.kind {
+                                SliderEventType::Head
+                                | SliderEventType::Repeat
+                                | SliderEventType::Tail => {
+                                    let samples =
+                                        slider.node_samples.get(node_idx).unwrap_or(&h.samples);
+                                    collect_sample(samples, event.time);
+                                    node_idx += 1;
+                                }
+                                SliderEventType::Tick | SliderEventType::LastTick => {}
+                            }
+                        }
+                    }
+                    GameMode::Mania => collect_sample(&h.samples, h.start_time), // Hold note
+                },
+                HitObjectKind::Hold(_) => collect_sample(&h.samples, h.start_time),
+            }
+        }
+
+        collected_samples.sort_by(|a, b| a.time.total_cmp(&b.time));
+        let mut collected_samples = collected_samples.into_iter();
+
+        if let Some(sample) = collected_samples.next() {
+            control_points.add(sample.clone());
+            let mut last_sample = sample;
+
+            for sample in collected_samples {
+                if !sample.is_redundant(&last_sample) {
+                    control_points.add(sample.clone());
+                    last_sample = sample;
+                }
+            }
         }
 
         let mut groups: Vec<_> = control_points

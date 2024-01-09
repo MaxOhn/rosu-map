@@ -6,7 +6,7 @@ use crate::{
         difficulty::{Difficulty, DifficultyState, ParseDifficultyError},
         events::{BreakPeriod, Events, EventsState, ParseEventsError},
         general::{CountdownType, GameMode},
-        hit_objects::{slider::path_type::PathType, CurveBuffers},
+        hit_objects::{slider::path_type::PathType, CurveBuffers, BASE_SCORING_DIST},
         timing_points::{
             ControlPoints, DifficultyPoint, ParseTimingPointsError, SamplePoint, TimingPoint,
             TimingPoints, TimingPointsState,
@@ -49,8 +49,8 @@ pub struct HitObjects {
     pub circle_size: f32,
     pub overall_difficulty: f32,
     pub approach_rate: f32,
-    pub slider_multiplier: f32,
-    pub slider_tick_rate: f32,
+    pub slider_multiplier: f64,
+    pub slider_tick_rate: f64,
 
     // Events
     pub background_file: String,
@@ -359,6 +359,29 @@ impl DecodeState for HitObjectsState {
     }
 }
 
+pub(crate) fn get_precision_adjusted_beat_len(
+    slider_velocity: f64,
+    beat_len: f64,
+    mode: GameMode,
+) -> f64 {
+    let slider_velocity_as_beat_len = -100.0 / slider_velocity;
+
+    let bpm_multiplier = if slider_velocity_as_beat_len < 0.0 {
+        match mode {
+            GameMode::Osu | GameMode::Catch => {
+                (-slider_velocity_as_beat_len).clamp(10.0, 10_000.0) / 100.0
+            }
+            GameMode::Taiko | GameMode::Mania => {
+                (-slider_velocity_as_beat_len).clamp(10.0, 1000.0) / 100.0
+            }
+        }
+    } else {
+        1.0
+    };
+
+    beat_len * bpm_multiplier
+}
+
 impl From<HitObjectsState> for HitObjects {
     fn from(state: HitObjectsState) -> Self {
         const CONTROL_POINT_LENIENCY: f64 = 5.0;
@@ -375,8 +398,6 @@ impl From<HitObjectsState> for HitObjects {
 
         for h in hit_objects.iter_mut() {
             if let HitObjectKind::Slider(ref mut slider) = h.kind {
-                const BASE_SCORING_DIST: f32 = 100.0;
-
                 let beat_len = timing_points
                     .control_points
                     .timing_point_at(h.start_time)
@@ -389,11 +410,13 @@ impl From<HitObjectsState> for HitObjects {
                         point.slider_velocity
                     });
 
-                let scoring_dist = f64::from(BASE_SCORING_DIST)
+                slider.velocity = f64::from(BASE_SCORING_DIST)
                     * f64::from(difficulty.slider_multiplier)
-                    * slider_velocity;
-
-                slider.velocity = scoring_dist / beat_len;
+                    / get_precision_adjusted_beat_len(
+                        slider_velocity,
+                        beat_len,
+                        timing_points.mode,
+                    );
 
                 let span_count = f64::from(slider.span_count());
                 let duration = slider.duration_with_bufs(&mut bufs);

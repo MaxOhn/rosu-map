@@ -11,8 +11,8 @@ pub struct Difficulty {
     pub circle_size: f32,
     pub overall_difficulty: f32,
     pub approach_rate: f32,
-    pub slider_multiplier: f32,
-    pub slider_tick_rate: f32,
+    pub slider_multiplier: f64,
+    pub slider_tick_rate: f64,
 }
 
 impl Default for Difficulty {
@@ -104,10 +104,10 @@ impl DecodeBeatmap for Difficulty {
                 state.has_approach_rate = true;
             }
             DifficultyKey::SliderMultiplier => {
-                state.difficulty.slider_multiplier = f32::parse(value)?.clamp(0.4, 3.6);
+                state.difficulty.slider_multiplier = f64::parse(value)?.clamp(0.4, 3.6);
             }
             DifficultyKey::SliderTickRate => {
-                state.difficulty.slider_tick_rate = f32::parse(value)?.clamp(0.5, 8.0);
+                state.difficulty.slider_tick_rate = f64::parse(value)?.clamp(0.5, 8.0);
             }
         }
 

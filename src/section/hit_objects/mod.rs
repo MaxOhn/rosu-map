@@ -28,6 +28,8 @@ mod spinner;
 /// Audio-related types.
 pub mod hit_samples;
 
+pub(crate) const BASE_SCORING_DIST: f32 = 100.0;
+
 /// A hit object of a [`Beatmap`].
 ///
 /// [`Beatmap`]: crate::beatmap::Beatmap

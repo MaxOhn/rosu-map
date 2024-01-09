@@ -99,7 +99,7 @@ impl SliderPath {
     /// Note that calling this method will invalidate the stored curve
     /// so it must be recalculated on its next access.
     pub fn control_points_mut(&mut self) -> &mut Vec<PathControlPoint> {
-        self.curve = None;
+        self.clear_curve();
 
         &mut self.control_points
     }
@@ -109,9 +109,15 @@ impl SliderPath {
     /// Note that calling this method will invalidate the stored curve
     /// so it must be recalculated on its next access.
     pub fn expected_dist_mut(&mut self) -> &mut Option<f64> {
-        self.curve = None;
+        self.clear_curve();
 
         &mut self.expected_dist
+    }
+
+    /// Remove the stored curve so that it has to be re-calculated when
+    /// accessing it the next time.
+    pub fn clear_curve(&mut self) {
+        self.curve = None;
     }
 
     fn calculate_curve(&self) -> Curve {
