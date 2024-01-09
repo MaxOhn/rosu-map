@@ -272,6 +272,7 @@ impl SampleBankInfo {
     pub fn read_custom_sample_banks(
         &mut self,
         mut split: Split<'_, char>,
+        banks_only: bool,
     ) -> Result<(), ParseSampleBankInfoError> {
         let Some(first) = split.next().filter(|s| !s.is_empty()) else {
             return Ok(());
@@ -291,6 +292,10 @@ impl SampleBankInfo {
 
         self.bank_for_normal = normal_bank;
         self.bank_for_addition = add_bank.or(normal_bank);
+
+        if banks_only {
+            return Ok(());
+        }
 
         if let Some(next) = split.next() {
             self.custom_sample_bank = next.parse_num()?;

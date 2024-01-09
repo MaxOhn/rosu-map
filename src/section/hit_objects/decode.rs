@@ -526,7 +526,7 @@ impl DecodeBeatmap for HitObjects {
 
         let kind = if hit_object_type.has_flag(HitObjectType::CIRCLE) {
             if let Some(s) = split.next() {
-                bank_info.read_custom_sample_banks(s.split(':'))?;
+                bank_info.read_custom_sample_banks(s.split(':'), false)?;
             }
 
             let circle = HitObjectCircle {
@@ -566,7 +566,7 @@ impl DecodeBeatmap for HitObjects {
             let next_9 = split.next();
 
             if let Some(next) = split.next() {
-                bank_info.read_custom_sample_banks(next.split(':'))?;
+                bank_info.read_custom_sample_banks(next.split(':'), true)?;
             }
 
             let nodes = repeat_count as usize + 2;
@@ -575,7 +575,7 @@ impl DecodeBeatmap for HitObjects {
 
             if let Some(next) = next_9.filter(|s| !s.is_empty()) {
                 for (bank_info, set) in node_bank_infos.iter_mut().zip(next.split('|')) {
-                    bank_info.read_custom_sample_banks(set.split(':'))?;
+                    bank_info.read_custom_sample_banks(set.split(':'), false)?;
                 }
             }
 
@@ -617,7 +617,7 @@ impl DecodeBeatmap for HitObjects {
             let duration = (duration - start_time).max(0.0);
 
             if let Some(s) = split.next() {
-                bank_info.read_custom_sample_banks(s.split(':'))?;
+                bank_info.read_custom_sample_banks(s.split(':'), false)?;
             }
 
             let spinner = HitObjectSpinner {
@@ -640,7 +640,7 @@ impl DecodeBeatmap for HitObjects {
 
                 end_time = start_time.max(new_end_time);
 
-                bank_info.read_custom_sample_banks(ss)?;
+                bank_info.read_custom_sample_banks(ss, false)?;
             }
 
             let hold = HitObjectHold {
