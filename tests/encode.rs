@@ -1,4 +1,4 @@
-use std::{fs, num::NonZeroI32};
+use std::{fmt::Debug, fs, num::NonZeroI32};
 
 use rosu_map::{
     section::hit_objects::{
@@ -16,8 +16,9 @@ fn stability() {
     for entry in fs::read_dir("./resources").unwrap() {
         let entry = entry.unwrap();
         let filename = entry.file_name();
+        let filename = filename.to_str().unwrap();
 
-        if !filename.to_string_lossy().ends_with(".osu") {
+        if !filename.ends_with(".osu") {
             continue;
         }
 
@@ -34,18 +35,22 @@ fn stability() {
             panic!("Failed to decode beatmap after encoding {filename:?}: {e:?}")
         });
 
-        assert_eq!(
-            decoded.control_points.timing_points, decoded_after_encode.control_points.timing_points,
-            "{filename:?}"
+        assert_eq_list(
+            &decoded.control_points.timing_points,
+            &decoded_after_encode.control_points.timing_points,
+            filename,
         );
-        assert_eq!(
-            decoded.control_points.effect_points, decoded_after_encode.control_points.effect_points,
-            "{filename:?}"
+        assert_eq_list(
+            &decoded.control_points.effect_points,
+            &decoded_after_encode.control_points.effect_points,
+            filename,
         );
-        assert_eq!(
-            decoded.hit_objects, decoded_after_encode.hit_objects,
-            "{filename:?}"
+        assert_eq_list(
+            &decoded.hit_objects,
+            &decoded_after_encode.hit_objects,
+            filename,
         );
+
         assert_eq!(
             decoded.custom_colors, decoded_after_encode.custom_colors,
             "{filename:?}"
@@ -54,6 +59,16 @@ fn stability() {
             decoded.custom_combo_colors, decoded_after_encode.custom_combo_colors,
             "{filename:?}"
         );
+    }
+
+    #[track_caller]
+    fn assert_eq_list<T: Debug + PartialEq>(expected: &[T], actual: &[T], filename: &str) {
+        if let Some(idx) = expected.iter().zip(actual).position(|(a, b)| a != b) {
+            panic!(
+                "[{idx}] filename: {filename:?}\nleft:\n{:?}\nright:\n{:?}",
+                expected[idx], actual[idx]
+            );
+        }
     }
 }
 
