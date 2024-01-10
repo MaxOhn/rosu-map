@@ -670,7 +670,7 @@ struct ControlPointProperties {
     sample_bank: i32,
     custom_sample_bank: i32,
     sample_volume: i32,
-    effect_flags: u8,
+    effect_flags: i32,
 }
 
 impl ControlPointProperties {
