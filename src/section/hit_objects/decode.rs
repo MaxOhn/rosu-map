@@ -387,8 +387,8 @@ impl From<HitObjectsState> for HitObjects {
         const CONTROL_POINT_LENIENCY: f64 = 5.0;
 
         let difficulty: Difficulty = state.difficulty.into();
-        let events: Events = state.events.into();
         let timing_points: TimingPoints = state.timing_points.into();
+        let events = state.events;
 
         let mut hit_objects = state.hit_objects;
         hit_objects.sort_by(|a, b| a.start_time.total_cmp(&b.start_time));
@@ -410,8 +410,7 @@ impl From<HitObjectsState> for HitObjects {
                         point.slider_velocity
                     });
 
-                slider.velocity = f64::from(BASE_SCORING_DIST)
-                    * f64::from(difficulty.slider_multiplier)
+                slider.velocity = f64::from(BASE_SCORING_DIST) * difficulty.slider_multiplier
                     / get_precision_adjusted_beat_len(
                         slider_velocity,
                         beat_len,

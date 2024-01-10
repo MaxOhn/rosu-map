@@ -3,7 +3,7 @@ pub struct U16BeIterator<'a> {
 }
 
 impl<'a> U16BeIterator<'a> {
-    pub fn new(bytes: &'a [u8]) -> Self {
+    pub const fn new(bytes: &'a [u8]) -> Self {
         Self {
             inner: DoubleByteIterator::new(bytes),
         }
@@ -27,7 +27,7 @@ pub struct U16LeIterator<'a> {
 }
 
 impl<'a> U16LeIterator<'a> {
-    pub fn new(bytes: &'a [u8]) -> Self {
+    pub const fn new(bytes: &'a [u8]) -> Self {
         Self {
             inner: DoubleByteIterator::new(bytes),
         }

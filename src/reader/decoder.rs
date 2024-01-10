@@ -28,7 +28,7 @@ impl<R: BufRead> Decoder<R> {
             let available = match reader.fill_buf() {
                 Ok(n) => n,
                 Err(ref err) if err.kind() == ErrorKind::Interrupted => continue,
-                Err(err) => return Err(err.into()),
+                Err(err) => return Err(err),
             };
 
             let len = available.len();

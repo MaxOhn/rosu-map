@@ -326,23 +326,21 @@ impl From<TimingPointsState> for TimingPoints {
     fn from(mut state: TimingPointsState) -> Self {
         state.flush_pending_points();
 
-        let general: General = state.general.into();
-
         Self {
-            audio_file: general.audio_file,
-            audio_lead_in: general.audio_lead_in,
-            preview_time: general.preview_time,
-            default_sample_bank: general.default_sample_bank,
-            default_sample_volume: general.default_sample_volume,
-            stack_leniency: general.stack_leniency,
-            mode: general.mode,
-            letterbox_in_breaks: general.letterbox_in_breaks,
-            special_style: general.special_style,
-            widescreen_storyboard: general.widescreen_storyboard,
-            epilepsy_warning: general.epilepsy_warning,
-            samples_match_playback_rate: general.samples_match_playback_rate,
-            countdown: general.countdown,
-            countdown_offset: general.countdown_offset,
+            audio_file: state.general.audio_file,
+            audio_lead_in: state.general.audio_lead_in,
+            preview_time: state.general.preview_time,
+            default_sample_bank: state.general.default_sample_bank,
+            default_sample_volume: state.general.default_sample_volume,
+            stack_leniency: state.general.stack_leniency,
+            mode: state.general.mode,
+            letterbox_in_breaks: state.general.letterbox_in_breaks,
+            special_style: state.general.special_style,
+            widescreen_storyboard: state.general.widescreen_storyboard,
+            epilepsy_warning: state.general.epilepsy_warning,
+            samples_match_playback_rate: state.general.samples_match_playback_rate,
+            countdown: state.general.countdown,
+            countdown_offset: state.general.countdown_offset,
             control_points: state.control_points,
         }
     }
