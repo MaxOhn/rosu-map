@@ -8,7 +8,7 @@ use super::{
 /// The path of a [`HitObjectSlider`].
 ///
 /// [`HitObjectSlider`]: crate::section::hit_objects::HitObjectSlider
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct SliderPath {
     control_points: Vec<PathControlPoint>,
     expected_dist: Option<f64>,
@@ -126,6 +126,12 @@ impl SliderPath {
 
     fn calculate_curve_with_bufs(&self, bufs: &mut CurveBuffers) -> Curve {
         Curve::new(&self.control_points, self.expected_dist, bufs)
+    }
+}
+
+impl PartialEq for SliderPath {
+    fn eq(&self, other: &Self) -> bool {
+        self.control_points == other.control_points
     }
 }
 
