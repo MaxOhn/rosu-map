@@ -1,8 +1,7 @@
-use std::{path::Path, str::FromStr};
+use std::{io, path::Path, str::FromStr};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
-    reader::DecoderError,
     section::{
         colors::{Color, Colors, ColorsState, CustomColor, ParseColorsError},
         editor::{Editor, EditorState, ParseEditorError},
@@ -88,7 +87,7 @@ impl Beatmap {
     /// let map: Beatmap = Beatmap::from_path(path)?;
     /// # Ok(()) }
     /// ```
-    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, DecoderError> {
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, io::Error> {
         crate::from_path(path)
     }
 
@@ -113,13 +112,13 @@ impl Beatmap {
     /// assert_eq!(map.creator, "pishifat");
     /// # Ok(()) }
     /// ```
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, DecoderError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, io::Error> {
         crate::from_bytes(bytes)
     }
 }
 
 impl FromStr for Beatmap {
-    type Err = DecoderError;
+    type Err = io::Error;
 
     /// Parse a [`Beatmap`] by providing the content of a `.osu` file as a
     /// string.

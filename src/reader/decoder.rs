@@ -1,9 +1,9 @@
 use std::{
-    io::{BufRead, ErrorKind},
+    io::{BufRead, ErrorKind, Result as IoResult},
     slice,
 };
 
-use super::{encoding::Encoding, error::DecoderError};
+use super::encoding::Encoding;
 
 pub struct Decoder<R> {
     inner: R,
@@ -14,7 +14,7 @@ pub struct Decoder<R> {
 }
 
 impl<R: BufRead> Decoder<R> {
-    pub fn new(mut inner: R) -> Result<Self, DecoderError> {
+    pub fn new(mut inner: R) -> IoResult<Self> {
         Ok(Self {
             encoding: Self::read_bom(&mut inner)?,
             read_buf: Vec::new(),
@@ -23,7 +23,7 @@ impl<R: BufRead> Decoder<R> {
         })
     }
 
-    fn read_bom(reader: &mut R) -> Result<Encoding, DecoderError> {
+    fn read_bom(reader: &mut R) -> IoResult<Encoding> {
         let buf = loop {
             let available = match reader.fill_buf() {
                 Ok(n) => n,
@@ -46,7 +46,7 @@ impl<R: BufRead> Decoder<R> {
         Ok(encoding)
     }
 
-    pub fn read_line(&mut self) -> Result<Option<&str>, DecoderError> {
+    pub fn read_line(&mut self) -> IoResult<Option<&str>> {
         self.read_buf.clear();
 
         if self.inner.read_until(b'\n', &mut self.read_buf)? == 0 {
@@ -61,12 +61,10 @@ impl<R: BufRead> Decoder<R> {
             self.read_buf.push(byte);
         }
 
-        self.curr_line().map(Some)
+        Ok(Some(self.curr_line()))
     }
 
-    pub fn curr_line(&mut self) -> Result<&str, DecoderError> {
-        self.encoding
-            .decode(&self.read_buf, &mut self.decode_buf)
-            .map(str::trim)
+    pub fn curr_line(&mut self) -> &str {
+        self.encoding.decode(&self.read_buf, &mut self.decode_buf)
     }
 }

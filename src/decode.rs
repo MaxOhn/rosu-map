@@ -1,14 +1,13 @@
 use std::{
     error::Error,
     fs::File,
+    io,
     io::{BufRead, BufReader, Cursor},
     ops::ControlFlow,
     path::Path,
 };
 
 use crate::{reader::Reader, section::Section, FormatVersion};
-
-pub use crate::reader::DecoderError;
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing a path to a
 /// `.osu` file.
@@ -23,11 +22,8 @@ pub use crate::reader::DecoderError;
 /// let content: HitObjects = rosu_map::from_path(path)?;
 /// # Ok(()) }
 /// ```
-pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, DecoderError> {
-    File::open(path)
-        .map_err(DecoderError::from)
-        .map(BufReader::new)
-        .and_then(D::decode)
+pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, io::Error> {
+    File::open(path).map(BufReader::new).and_then(D::decode)
 }
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing the content of
@@ -49,7 +45,7 @@ pub fn from_path<D: DecodeBeatmap>(path: impl AsRef<Path>) -> Result<D, DecoderE
 /// assert_eq!(metadata.creator, "pishifat");
 /// # Ok(()) }
 /// ```
-pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, DecoderError> {
+pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, io::Error> {
     D::decode(Cursor::new(bytes))
 }
 
@@ -72,7 +68,7 @@ pub fn from_bytes<D: DecodeBeatmap>(bytes: &[u8]) -> Result<D, DecoderError> {
 /// assert_eq!(difficulty.slider_multiplier, 3.0);
 /// # Ok(()) }
 /// ```
-pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, DecoderError> {
+pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, io::Error> {
     D::decode(Cursor::new(s))
 }
 
@@ -253,7 +249,7 @@ pub trait DecodeBeatmap: Sized {
     /// The key method to read and parse content of a `.osu` file into `Self`.
     ///
     /// This method should not be implemented manually.
-    fn decode<R: BufRead>(src: R) -> Result<Self, DecoderError> {
+    fn decode<R: BufRead>(src: R) -> Result<Self, io::Error> {
         let mut reader = Reader::new(src)?;
 
         let (version, use_curr_line) = parse_version(&mut reader)?;
@@ -327,7 +323,7 @@ struct UseCurrentLine(bool);
 
 fn parse_version<R: BufRead>(
     reader: &mut Reader<R>,
-) -> Result<(FormatVersion, UseCurrentLine), DecoderError> {
+) -> Result<(FormatVersion, UseCurrentLine), io::Error> {
     loop {
         let (version, use_curr_line) = match reader.next_line(FormatVersion::try_from_line)? {
             Some(ControlFlow::Continue(())) => continue,
@@ -353,10 +349,10 @@ fn parse_version<R: BufRead>(
 fn parse_first_section<R: BufRead>(
     reader: &mut Reader<R>,
     UseCurrentLine(use_curr_line): UseCurrentLine,
-) -> Result<Option<Section>, DecoderError> {
+) -> Result<Option<Section>, io::Error> {
     if use_curr_line {
-        if let res @ (Ok(Some(_)) | Err(_)) = reader.curr_line().map(Section::try_from_line) {
-            return res;
+        if let opt @ Some(_) = Section::try_from_line(reader.curr_line()) {
+            return Ok(opt);
         }
     }
 
@@ -376,7 +372,7 @@ fn parse_section<R: BufRead, S, E>(
     reader: &mut Reader<R>,
     state: &mut S,
     f: fn(&mut S, &str) -> Result<(), E>,
-) -> Result<SectionFlow, DecoderError>
+) -> Result<SectionFlow, io::Error>
 where
     E: Error,
 {

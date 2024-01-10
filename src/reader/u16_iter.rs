@@ -1,14 +1,12 @@
-use super::error::DecoderError;
-
 pub struct U16BeIterator<'a> {
     inner: DoubleByteIterator<'a>,
 }
 
 impl<'a> U16BeIterator<'a> {
-    pub fn new(bytes: &'a [u8]) -> Result<Self, DecoderError> {
-        let inner = DoubleByteIterator::new(bytes)?;
-
-        Ok(Self { inner })
+    pub fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            inner: DoubleByteIterator::new(bytes),
+        }
     }
 }
 
@@ -29,10 +27,10 @@ pub struct U16LeIterator<'a> {
 }
 
 impl<'a> U16LeIterator<'a> {
-    pub fn new(bytes: &'a [u8]) -> Result<Self, DecoderError> {
-        let inner = DoubleByteIterator::new(bytes)?;
-
-        Ok(Self { inner })
+    pub fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            inner: DoubleByteIterator::new(bytes),
+        }
     }
 }
 
@@ -53,12 +51,8 @@ struct DoubleByteIterator<'a> {
 }
 
 impl<'a> DoubleByteIterator<'a> {
-    const fn new(bytes: &'a [u8]) -> Result<Self, DecoderError> {
-        if bytes.len() % 2 != 0 {
-            return Err(DecoderError::IncorrectEncoding);
-        }
-
-        Ok(Self { bytes })
+    const fn new(bytes: &'a [u8]) -> Self {
+        Self { bytes }
     }
 }
 
@@ -85,15 +79,14 @@ mod tests {
 
     #[test]
     fn invalid_len() {
-        assert!(matches!(
-            DoubleByteIterator::new(&[1, 2, 3]),
-            Err(DecoderError::IncorrectEncoding)
-        ));
+        let mut iter = DoubleByteIterator::new(&[1, 2, 3]);
+        assert_eq!(iter.next(), Some([1, 2]));
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
     fn le_works() {
-        let mut iter = U16LeIterator::new(&[b'1', 0, b'Z', 0]).unwrap();
+        let mut iter = U16LeIterator::new(&[b'1', 0, b'Z', 0]);
         assert_eq!(iter.next(), Some(b'1' as u16));
         assert_eq!(iter.next(), Some(b'Z' as u16));
         assert_eq!(iter.next(), None);
@@ -101,7 +94,7 @@ mod tests {
 
     #[test]
     fn be_works() {
-        let mut iter = U16BeIterator::new(&[0, b'1', 0, b'Z']).unwrap();
+        let mut iter = U16BeIterator::new(&[0, b'1', 0, b'Z']);
         assert_eq!(iter.next(), Some(b'1' as u16));
         assert_eq!(iter.next(), Some(b'Z' as u16));
         assert_eq!(iter.next(), None);
