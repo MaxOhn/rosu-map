@@ -8,7 +8,7 @@ use super::encoding::Encoding;
 pub struct Decoder<R> {
     inner: R,
     read_buf: Vec<u8>,
-    // only used for UTF-16 encoded data
+    // Only used for UTF-16/invalid UTF-8 encoded data
     decode_buf: String,
     encoding: Encoding,
 }

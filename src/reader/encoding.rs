@@ -66,9 +66,8 @@ impl Encoding {
     fn decode_utf16<S: Iterator<Item = u16>>(src: S, dst: &mut String) -> &str {
         dst.clear();
 
-        for res in char::decode_utf16(src) {
-            dst.push(res.unwrap_or(char::REPLACEMENT_CHARACTER));
-        }
+        let chars = char::decode_utf16(src).map(|ch| ch.unwrap_or(char::REPLACEMENT_CHARACTER));
+        dst.extend(chars);
 
         dst
     }
