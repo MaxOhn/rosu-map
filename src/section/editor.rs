@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{KeyValue, ParseNumberError, StrExt},
-    FormatVersion,
+    Beatmap, FormatVersion,
 };
 
 /// Struct containing all data from a `.osu` file's `[Editor]` section.
@@ -23,6 +23,19 @@ impl Default for Editor {
             beat_divisor: 4,
             grid_size: Default::default(),
             timeline_zoom: 1.0,
+        }
+    }
+}
+
+impl From<Editor> for Beatmap {
+    fn from(editor: Editor) -> Self {
+        Self {
+            bookmarks: editor.bookmarks,
+            distance_spacing: editor.distance_spacing,
+            beat_divisor: editor.beat_divisor,
+            grid_size: editor.grid_size,
+            timeline_zoom: editor.timeline_zoom,
+            ..Self::default()
         }
     }
 }

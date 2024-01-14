@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{ParseNumber, ParseNumberError, StrExt},
-    FormatVersion,
+    Beatmap, FormatVersion,
 };
 
 use super::{BreakPeriod, EventType, ParseEventTypeError};
@@ -11,6 +11,16 @@ use super::{BreakPeriod, EventType, ParseEventTypeError};
 pub struct Events {
     pub background_file: String,
     pub breaks: Vec<BreakPeriod>,
+}
+
+impl From<Events> for Beatmap {
+    fn from(events: Events) -> Self {
+        Self {
+            background_file: events.background_file,
+            breaks: events.breaks,
+            ..Self::default()
+        }
+    }
 }
 
 /// All the ways that parsing a `.osu` file into [`Events`] can fail.

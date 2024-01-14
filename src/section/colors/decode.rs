@@ -4,7 +4,7 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     section::UnknownKeyError,
     util::{KeyValue, ParseNumberError, StrExt},
-    FormatVersion,
+    Beatmap, FormatVersion,
 };
 
 use super::{Color, CustomColor};
@@ -14,6 +14,16 @@ use super::{Color, CustomColor};
 pub struct Colors {
     pub custom_combo_colors: Vec<Color>,
     pub custom_colors: Vec<CustomColor>,
+}
+
+impl From<Colors> for Beatmap {
+    fn from(colors: Colors) -> Self {
+        Self {
+            custom_combo_colors: colors.custom_combo_colors,
+            custom_colors: colors.custom_colors,
+            ..Self::default()
+        }
+    }
 }
 
 impl Colors {

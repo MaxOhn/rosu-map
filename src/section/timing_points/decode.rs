@@ -5,7 +5,7 @@ use crate::{
         hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     },
     util::{ParseNumber, ParseNumberError, StrExt, MAX_PARSE_VALUE},
-    FormatVersion,
+    FormatVersion, Beatmap,
 };
 
 use super::{
@@ -61,9 +61,30 @@ impl Default for TimingPoints {
     }
 }
 
+impl From<TimingPoints> for Beatmap {
+    fn from(timing_points: TimingPoints) -> Self {
+        Self {
+            audio_file: timing_points.audio_file,
+            audio_lead_in: timing_points.audio_lead_in,
+            preview_time: timing_points.preview_time,
+            default_sample_bank: timing_points.default_sample_bank,
+            default_sample_volume: timing_points.default_sample_volume,
+            stack_leniency: timing_points.stack_leniency,
+            mode: timing_points.mode,
+            letterbox_in_breaks: timing_points.letterbox_in_breaks,
+            special_style: timing_points.special_style,
+            widescreen_storyboard: timing_points.widescreen_storyboard,
+            epilepsy_warning: timing_points.epilepsy_warning,
+            samples_match_playback_rate: timing_points.samples_match_playback_rate,
+            countdown: timing_points.countdown,
+            countdown_offset: timing_points.countdown_offset,
+            control_points: timing_points.control_points,
+            ..Self::default()
+        }
+    }
+}
+
 /// All control points of a [`Beatmap`].
-///
-/// [`Beatmap`]: crate::Beatmap
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ControlPoints {
     pub timing_points: Vec<TimingPoint>,

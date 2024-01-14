@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{KeyValue, ParseNumberError, StrExt},
-    FormatVersion,
+    FormatVersion, Beatmap,
 };
 
 /// Struct containing all data from a `.osu` file's `[Metadata]` section.
@@ -33,6 +33,24 @@ impl Default for Metadata {
             tags: Default::default(),
             beatmap_id: -1,
             beatmap_set_id: Default::default(),
+        }
+    }
+}
+
+impl From<Metadata> for Beatmap {
+    fn from(metadata: Metadata) -> Self {
+        Self {
+            title: metadata.title,
+            title_unicode: metadata.title_unicode,
+            artist: metadata.artist,
+            artist_unicode: metadata.artist_unicode,
+            creator: metadata.creator,
+            version: metadata.version,
+            source: metadata.source,
+            tags: metadata.tags,
+            beatmap_id: metadata.beatmap_id,
+            beatmap_set_id: metadata.beatmap_set_id,
+            ..Self::default()
         }
     }
 }

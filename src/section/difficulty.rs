@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
-    FormatVersion,
+    FormatVersion, Beatmap,
 };
 
 /// Struct containing all data from a `.osu` file's `[Difficulty]` section.
@@ -24,6 +24,20 @@ impl Default for Difficulty {
             approach_rate: 5.0,
             slider_multiplier: 1.4,
             slider_tick_rate: 1.0,
+        }
+    }
+}
+
+impl From<Difficulty> for Beatmap {
+    fn from(difficulty: Difficulty) -> Self {
+        Self {
+            hp_drain_rate: difficulty.hp_drain_rate,
+            circle_size: difficulty.circle_size,
+            overall_difficulty: difficulty.overall_difficulty,
+            approach_rate: difficulty.approach_rate,
+            slider_multiplier: difficulty.slider_multiplier,
+            slider_tick_rate: difficulty.slider_tick_rate,
+            ..Self::default()
         }
     }
 }

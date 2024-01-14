@@ -13,7 +13,7 @@ use crate::{
         },
     },
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
-    FormatVersion,
+    FormatVersion, Beatmap,
 };
 
 use super::{
@@ -94,6 +94,38 @@ impl Default for HitObjects {
             breaks: events.breaks,
             control_points: timing_points.control_points,
             hit_objects: Vec::default(),
+        }
+    }
+}
+
+impl From<HitObjects> for Beatmap {
+    fn from(hit_objects: HitObjects) -> Self {
+        Self {
+            audio_file: hit_objects.audio_file,
+            audio_lead_in: hit_objects.audio_lead_in,
+            preview_time: hit_objects.preview_time,
+            default_sample_bank: hit_objects.default_sample_bank,
+            default_sample_volume: hit_objects.default_sample_volume,
+            stack_leniency: hit_objects.stack_leniency,
+            mode: hit_objects.mode,
+            letterbox_in_breaks: hit_objects.letterbox_in_breaks,
+            special_style: hit_objects.special_style,
+            widescreen_storyboard: hit_objects.widescreen_storyboard,
+            epilepsy_warning: hit_objects.epilepsy_warning,
+            samples_match_playback_rate: hit_objects.samples_match_playback_rate,
+            countdown: hit_objects.countdown,
+            countdown_offset: hit_objects.countdown_offset,
+            hp_drain_rate: hit_objects.hp_drain_rate,
+            circle_size: hit_objects.circle_size,
+            overall_difficulty: hit_objects.overall_difficulty,
+            approach_rate: hit_objects.approach_rate,
+            slider_multiplier: hit_objects.slider_multiplier,
+            slider_tick_rate: hit_objects.slider_tick_rate,
+            background_file: hit_objects.background_file,
+            breaks: hit_objects.breaks,
+            control_points: hit_objects.control_points,
+            hit_objects: hit_objects.hit_objects,
+            ..Self::default()
         }
     }
 }

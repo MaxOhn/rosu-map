@@ -2,7 +2,7 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     section::hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
-    FormatVersion,
+    FormatVersion, Beatmap,
 };
 
 use super::{CountdownType, GameMode, ParseCountdownTypeError, ParseGameModeError};
@@ -44,6 +44,28 @@ impl Default for General {
             samples_match_playback_rate: false,
             countdown: CountdownType::Normal,
             countdown_offset: Default::default(),
+        }
+    }
+}
+
+impl From<General> for Beatmap {
+    fn from(general: General) -> Self {
+        Self {
+            audio_file: general.audio_file,
+            audio_lead_in: general.audio_lead_in,
+            preview_time: general.preview_time,
+            default_sample_bank: general.default_sample_bank,
+            default_sample_volume: general.default_sample_volume,
+            stack_leniency: general.stack_leniency,
+            mode: general.mode,
+            letterbox_in_breaks: general.letterbox_in_breaks,
+            special_style: general.special_style,
+            widescreen_storyboard: general.widescreen_storyboard,
+            epilepsy_warning: general.epilepsy_warning,
+            samples_match_playback_rate: general.samples_match_playback_rate,
+            countdown: general.countdown,
+            countdown_offset: general.countdown_offset,
+            ..Self::default()
         }
     }
 }
