@@ -63,15 +63,14 @@ impl FromStr for Color {
 
     #[allow(clippy::many_single_char_names)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut split = s.split(',');
+        let mut split = s.split(',').map(str::trim);
 
         let r = split.next();
         let g = split.next();
         let b = split.next();
-        let a = split.next();
-        let none = split.next();
+        let none = split.nth(1);
 
-        let (Some(r), Some(g), Some(b), _, None) = (r, g, b, a, none) else {
+        let (Some(r), Some(g), Some(b), None) = (r, g, b, none) else {
             return Err(ParseColorsError::IncorrectColor);
         };
 

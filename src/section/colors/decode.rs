@@ -101,20 +101,7 @@ impl DecodeBeatmap for Colors {
             return Ok(());
         };
 
-        let mut split = value.split(',');
-
-        let r = split.next();
-        let g = split.next();
-        let b = split.next();
-        let a = split.next();
-        let none = split.next();
-
-        let (r, g, b) = match (r, g, b, a, none) {
-            (Some(r), Some(g), Some(b), _, None) => (r.parse()?, g.parse()?, b.parse()?),
-            _ => return Err(ParseColorsError::IncorrectColor),
-        };
-
-        let color = Color::new(r, g, b, 255);
+        let color: Color = value.parse()?;
 
         match key {
             ColorsKey::Combo => state.custom_combo_colors.push(color),
