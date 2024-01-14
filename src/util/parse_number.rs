@@ -33,7 +33,7 @@ impl ParseNumber for i32 {
     }
 
     fn parse_with_limits(s: &str, limit: Self) -> Result<Self, ParseNumberError> {
-        let n = s.parse()?;
+        let n: Self = s.trim().parse()?;
 
         if n < -limit {
             Err(ParseNumberError::NumberUnderflow)
@@ -51,7 +51,7 @@ impl ParseNumber for f32 {
     }
 
     fn parse_with_limits(s: &str, limit: Self) -> Result<Self, ParseNumberError> {
-        let n: Self = s.parse()?;
+        let n: Self = s.trim().parse()?;
 
         if n < -limit {
             Err(ParseNumberError::NumberUnderflow)
@@ -71,7 +71,7 @@ impl ParseNumber for f64 {
     }
 
     fn parse_with_limits(s: &str, limit: Self) -> Result<Self, ParseNumberError> {
-        let n: Self = s.parse()?;
+        let n: Self = s.trim().parse()?;
 
         if n < -limit {
             Err(ParseNumberError::NumberUnderflow)

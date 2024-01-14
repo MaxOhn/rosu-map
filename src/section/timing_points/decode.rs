@@ -378,7 +378,7 @@ impl DecodeBeatmap for TimingPoints {
             .zip(split.next())
             .ok_or(ParseTimingPointsError::InvalidLine)?;
 
-        let time = time.trim().parse_num::<f64>()?;
+        let time = time.parse_num::<f64>()?;
 
         // Manual `str::parse_num::<f64>` so that NaN does not cause an error
         let beat_len = beat_len
