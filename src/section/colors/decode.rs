@@ -4,7 +4,7 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     section::UnknownKeyError,
     util::{KeyValue, ParseNumberError, StrExt},
-    Beatmap, FormatVersion,
+    Beatmap,
 };
 
 use super::{Color, CustomColor};
@@ -73,7 +73,7 @@ impl From<ParseIntError> for ParseColorsError {
 pub type ColorsState = Colors;
 
 impl DecodeState for ColorsState {
-    fn create(_version: FormatVersion) -> Self {
+    fn create(_version: i32) -> Self {
         Self::default()
     }
 }

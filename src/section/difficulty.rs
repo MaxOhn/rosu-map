@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
-    FormatVersion, Beatmap,
+    Beatmap,
 };
 
 /// Struct containing all data from a `.osu` file's `[Difficulty]` section.
@@ -68,7 +68,7 @@ pub struct DifficultyState {
 }
 
 impl DecodeState for DifficultyState {
-    fn create(_version: FormatVersion) -> Self {
+    fn create(_: i32) -> Self {
         Self {
             has_approach_rate: false,
             difficulty: Difficulty::default(),

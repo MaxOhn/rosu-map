@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{ParseNumber, ParseNumberError, StrExt},
-    Beatmap, FormatVersion,
+    Beatmap,
 };
 
 use super::{BreakPeriod, EventType, ParseEventTypeError};
@@ -38,7 +38,7 @@ pub enum ParseEventsError {
 pub type EventsState = Events;
 
 impl DecodeState for EventsState {
-    fn create(_: FormatVersion) -> Self {
+    fn create(_: i32) -> Self {
         Self::default()
     }
 }

@@ -5,7 +5,7 @@ use crate::{
         hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     },
     util::{ParseNumber, ParseNumberError, StrExt, MAX_PARSE_VALUE},
-    FormatVersion, Beatmap,
+    Beatmap,
 };
 
 use super::{
@@ -330,7 +330,7 @@ impl TimingPointsState {
 }
 
 impl DecodeState for TimingPointsState {
-    fn create(version: FormatVersion) -> Self {
+    fn create(version: i32) -> Self {
         Self {
             general: GeneralState::create(version),
             pending_control_points_time: 0.0,

@@ -12,14 +12,13 @@ use crate::{
         },
         metadata::{Metadata, MetadataState, ParseMetadataError},
         timing_points::ControlPoints,
-    },
-    FormatVersion,
+    }, LATEST_FORMAT_VERSION,
 };
 
 /// Fully parsed content of a `.osu` file.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Beatmap {
-    pub format_version: FormatVersion,
+    pub format_version: i32,
 
     // General
     pub audio_file: String,
@@ -157,7 +156,7 @@ impl Default for Beatmap {
         let hit_objects = HitObjects::default();
 
         Self {
-            format_version: FormatVersion::default(),
+            format_version: LATEST_FORMAT_VERSION,
             audio_file: hit_objects.audio_file,
             audio_lead_in: hit_objects.audio_lead_in,
             preview_time: hit_objects.preview_time,
@@ -218,7 +217,7 @@ pub enum ParseBeatmapError {
 
 /// The parsing state for [`Beatmap`] in [`DecodeBeatmap`].
 pub struct BeatmapState {
-    pub version: FormatVersion,
+    pub version: i32,
     pub editor: EditorState,
     pub metadata: MetadataState,
     pub colors: ColorsState,
@@ -226,7 +225,7 @@ pub struct BeatmapState {
 }
 
 impl DecodeState for BeatmapState {
-    fn create(version: FormatVersion) -> Self {
+    fn create(version: i32) -> Self {
         Self {
             version,
             editor: EditorState::create(version),

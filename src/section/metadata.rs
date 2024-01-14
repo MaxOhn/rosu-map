@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{KeyValue, ParseNumberError, StrExt},
-    FormatVersion, Beatmap,
+     Beatmap,
 };
 
 /// Struct containing all data from a `.osu` file's `[Metadata]` section.
@@ -82,7 +82,7 @@ pub enum ParseMetadataError {
 pub type MetadataState = Metadata;
 
 impl DecodeState for MetadataState {
-    fn create(_version: FormatVersion) -> Self {
+    fn create(_: i32) -> Self {
         Self::default()
     }
 }

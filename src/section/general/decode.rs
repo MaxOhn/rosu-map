@@ -2,7 +2,7 @@ use crate::{
     decode::{DecodeBeatmap, DecodeState},
     section::hit_objects::hit_samples::{ParseSampleBankError, SampleBank},
     util::{KeyValue, ParseNumber, ParseNumberError, StrExt},
-    FormatVersion, Beatmap,
+    Beatmap,
 };
 
 use super::{CountdownType, GameMode, ParseCountdownTypeError, ParseGameModeError};
@@ -107,7 +107,7 @@ pub enum ParseGeneralError {
 pub type GeneralState = General;
 
 impl DecodeState for GeneralState {
-    fn create(_: FormatVersion) -> Self {
+    fn create(_: i32) -> Self {
         Self::default()
     }
 }

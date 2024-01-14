@@ -23,7 +23,6 @@ use crate::{
         },
     },
     util::Pos,
-    FormatVersion,
 };
 
 impl Beatmap {
@@ -110,7 +109,7 @@ impl Beatmap {
     ///
     /// [`encode_to_path`]: Beatmap::encode_to_path
     pub fn encode<W: Write>(&mut self, mut writer: W) -> IoResult<()> {
-        writeln!(writer, "osu file format v{}", self.format_version.0)?;
+        writeln!(writer, "osu file format v{}", self.format_version)?;
 
         writer.write_all(b"\n")?;
         self.encode_general(&mut writer)?;
@@ -891,7 +890,7 @@ fn collect_sample(
 fn slider_events<'ticks>(
     start_time: f64,
     slider: &mut HitObjectSlider,
-    format_version: FormatVersion,
+    format_version: i32,
     slider_tick_rate: f64,
     control_points: &ControlPoints,
     curve_bufs: &mut CurveBuffers,
@@ -942,7 +941,7 @@ fn slider_events<'ticks>(
 fn juicestream_events<'ticks>(
     start_time: f64,
     slider: &mut HitObjectSlider,
-    format_version: FormatVersion,
+    format_version: i32,
     slider_tick_rate: f64,
     slider_multiplier: f64,
     control_points: &ControlPoints,

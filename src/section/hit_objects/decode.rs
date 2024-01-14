@@ -13,7 +13,7 @@ use crate::{
         },
     },
     util::{ParseNumber, ParseNumberError, Pos, StrExt},
-    FormatVersion, Beatmap,
+    Beatmap,
 };
 
 use super::{
@@ -376,7 +376,7 @@ impl HitObjectsState {
 }
 
 impl DecodeState for HitObjectsState {
-    fn create(version: FormatVersion) -> Self {
+    fn create(version: i32) -> Self {
         Self {
             first_object: true,
             last_object: None,

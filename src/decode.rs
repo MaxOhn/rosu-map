@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use crate::{reader::Reader, section::Section, FormatVersion};
+use crate::{format_version, reader::Reader, section::Section};
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing a path to a
 /// `.osu` file.
@@ -74,11 +74,11 @@ pub fn from_str<D: DecodeBeatmap>(s: &str) -> Result<D, io::Error> {
 
 /// Intermediate state while parsing via [`DecodeBeatmap`].
 pub trait DecodeState: Sized {
-    /// Given the [`FormatVersion`], create an instance.
+    /// Given the format version, create an instance.
     ///
     /// If the version is not of interest, this is basically
     /// `Default::default()`.
-    fn create(version: FormatVersion) -> Self;
+    fn create(version: i32) -> Self;
 }
 
 /// Trait to handle reading and parsing content of `.osu` files.
@@ -126,7 +126,7 @@ pub trait DecodeState: Sized {
 /// slower than implementing this trait on a custom type:
 ///
 /// ```
-/// use rosu_map::{DecodeBeatmap, DecodeState, FormatVersion};
+/// use rosu_map::{DecodeBeatmap, DecodeState};
 /// use rosu_map::section::difficulty::{Difficulty, DifficultyState, ParseDifficultyError};
 /// use rosu_map::section::metadata::MetadataKey;
 /// use rosu_map::util::KeyValue;
@@ -149,7 +149,7 @@ pub trait DecodeState: Sized {
 ///
 /// // Required to implement for the `DecodeBeatmap` trait.
 /// impl DecodeState for CustomBeatmapState {
-///     fn create(version: FormatVersion) -> Self {
+///     fn create(version: i32) -> Self {
 ///         Self {
 ///             title: String::new(),
 ///             difficulty: DifficultyState::create(version),
@@ -321,26 +321,25 @@ pub trait DecodeBeatmap: Sized {
 
 struct UseCurrentLine(bool);
 
-fn parse_version<R: BufRead>(
-    reader: &mut Reader<R>,
-) -> Result<(FormatVersion, UseCurrentLine), io::Error> {
+fn parse_version<R: BufRead>(reader: &mut Reader<R>) -> Result<(i32, UseCurrentLine), io::Error> {
     loop {
-        let (version, use_curr_line) = match reader.next_line(FormatVersion::try_from_line)? {
-            Some(ControlFlow::Continue(())) => continue,
-            Some(ControlFlow::Break(Ok(version))) => (version, false),
-            // Only used when `tracing` feature is enabled
-            #[allow(unused)]
-            Some(ControlFlow::Break(Err(err))) => {
-                #[cfg(feature = "tracing")]
-                {
-                    tracing::error!("Failed to parse format version: {err}");
-                    log_error_cause(&err);
-                }
+        let (version, use_curr_line) =
+            match reader.next_line(format_version::try_version_from_line)? {
+                Some(ControlFlow::Continue(())) => continue,
+                Some(ControlFlow::Break(Ok(version))) => (version, false),
+                // Only used when `tracing` feature is enabled
+                #[allow(unused)]
+                Some(ControlFlow::Break(Err(err))) => {
+                    #[cfg(feature = "tracing")]
+                    {
+                        tracing::error!("Failed to parse format version: {err}");
+                        log_error_cause(&err);
+                    }
 
-                (FormatVersion::default(), true)
-            }
-            None => (FormatVersion::default(), false),
-        };
+                    (format_version::LATEST_FORMAT_VERSION, true)
+                }
+                None => (format_version::LATEST_FORMAT_VERSION, false),
+            };
 
         return Ok((version, UseCurrentLine(use_curr_line)));
     }

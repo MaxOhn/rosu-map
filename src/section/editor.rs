@@ -1,7 +1,7 @@
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
     util::{KeyValue, ParseNumberError, StrExt},
-    Beatmap, FormatVersion,
+    Beatmap, 
 };
 
 /// Struct containing all data from a `.osu` file's `[Editor]` section.
@@ -62,7 +62,7 @@ pub enum ParseEditorError {
 pub type EditorState = Editor;
 
 impl DecodeState for EditorState {
-    fn create(_version: FormatVersion) -> Self {
+    fn create(_: i32) -> Self {
         Self::default()
     }
 }
