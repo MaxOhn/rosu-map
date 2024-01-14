@@ -65,6 +65,8 @@ impl<R: BufRead> Decoder<R> {
     }
 
     pub fn curr_line(&mut self) -> &str {
-        self.encoding.decode(&self.read_buf, &mut self.decode_buf)
+        self.encoding
+            .decode(&self.read_buf, &mut self.decode_buf)
+            .trim_end()
     }
 }

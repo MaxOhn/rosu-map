@@ -16,21 +16,16 @@ impl<R: BufRead> Reader<R> {
     }
 
     pub fn curr_line(&mut self) -> &str {
-        self.decoder.curr_line().trim()
+        self.decoder.curr_line()
     }
 
     pub fn next_line<O, F: FnOnce(&str) -> O>(&mut self, f: F) -> IoResult<Option<O>> {
         loop {
-            match self.decoder.read_line()? {
-                Some(line) if should_skip_line(line) => {}
-                Some(line) => {
-                    let trimmed = line.trim();
-
-                    if !trimmed.is_empty() {
-                        return Ok(Some(f(trimmed)));
-                    }
-                }
-                None => return Ok(None),
+            match self.decoder.read_line() {
+                Ok(Some(line)) if should_skip_line(line) => {}
+                Ok(Some(line)) => return Ok(Some(f(line))),
+                Ok(None) => return Ok(None),
+                Err(err) => return Err(err),
             }
         }
     }
