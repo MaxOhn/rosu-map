@@ -71,7 +71,7 @@ impl From<General> for Beatmap {
 }
 
 section_keys! {
-    /// All valid keys within a `.osu` file's `[General]` section
+    /// All valid keys within a `.osu` file's `[General]` section.
     pub enum GeneralKey {
         AudioFilename,
         AudioLeadIn,
@@ -170,6 +170,18 @@ impl DecodeBeatmap for General {
     }
 
     fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_variables(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_catch_the_beat(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_mania(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 }

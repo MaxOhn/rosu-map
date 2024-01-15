@@ -129,4 +129,16 @@ impl DecodeBeatmap for Colors {
     fn parse_hit_objects(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
         Ok(())
     }
+
+    fn parse_variables(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_catch_the_beat(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_mania(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }

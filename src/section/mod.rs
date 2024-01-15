@@ -33,6 +33,9 @@ pub enum Section {
     TimingPoints,
     Colors,
     HitObjects,
+    Variables,
+    CatchTheBeat,
+    Mania,
 }
 
 impl Section {
@@ -49,6 +52,9 @@ impl Section {
             "TimingPoints" => Self::TimingPoints,
             "Colours" => Self::Colors,
             "HitObjects" => Self::HitObjects,
+            "Variables" => Self::Variables,
+            "CatchTheBeat" => Self::CatchTheBeat,
+            "Mania" => Self::Mania,
             _ => return None,
         };
 

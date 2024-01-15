@@ -275,6 +275,13 @@ pub trait DecodeBeatmap: Sized {
                 Section::HitObjects => {
                     parse_section(&mut reader, &mut state, Self::parse_hit_objects)?
                 }
+                Section::Variables => {
+                    parse_section(&mut reader, &mut state, Self::parse_variables)?
+                }
+                Section::CatchTheBeat => {
+                    parse_section(&mut reader, &mut state, Self::parse_catch_the_beat)?
+                }
+                Section::Mania => parse_section(&mut reader, &mut state, Self::parse_mania)?,
             };
 
             match flow {
@@ -317,6 +324,18 @@ pub trait DecodeBeatmap: Sized {
     /// Update the state based on a line of the `[HitObjects]` section.
     #[allow(unused_variables)]
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
+
+    /// Update the state based on a line of the `[Variables]` section.
+    #[allow(unused_variables)]
+    fn parse_variables(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
+
+    /// Update the state based on a line of the `[CatchTheBeat]` section.
+    #[allow(unused_variables)]
+    fn parse_catch_the_beat(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
+
+    /// Update the state based on a line of the `[Mania]` section.
+    #[allow(unused_variables)]
+    fn parse_mania(state: &mut Self::State, line: &str) -> Result<(), Self::Error>;
 }
 
 struct UseCurrentLine(bool);

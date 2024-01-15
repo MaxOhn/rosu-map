@@ -12,7 +12,8 @@ use crate::{
         },
         metadata::{Metadata, MetadataState, ParseMetadataError},
         timing_points::ControlPoints,
-    }, LATEST_FORMAT_VERSION,
+    },
+    LATEST_FORMAT_VERSION,
 };
 
 /// Fully parsed content of a `.osu` file.
@@ -329,5 +330,17 @@ impl DecodeBeatmap for Beatmap {
     fn parse_hit_objects(state: &mut Self::State, line: &str) -> Result<(), Self::Error> {
         HitObjects::parse_hit_objects(&mut state.hit_objects, line)
             .map_err(ParseBeatmapError::HitOjects)
+    }
+
+    fn parse_variables(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_catch_the_beat(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn parse_mania(_: &mut Self::State, _: &str) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
