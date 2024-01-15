@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use crate::{format_version, reader::Reader, section::Section};
+use crate::{format_version, reader::Decoder, section::Section};
 
 /// Parse a type that implements [`DecodeBeatmap`] by providing a path to a
 /// `.osu` file.
@@ -250,47 +250,44 @@ pub trait DecodeBeatmap: Sized {
     ///
     /// This method should not be implemented manually.
     fn decode<R: BufRead>(src: R) -> Result<Self, io::Error> {
-        let mut reader = Reader::new(src)?;
+        let mut reader = Decoder::new(src)?;
 
         let (version, use_curr_line) = parse_version(&mut reader)?;
-        let mut state = Self::State::create(version);
+        let mut state =
+            Self::State::create(version.unwrap_or(format_version::LATEST_FORMAT_VERSION));
 
         let Some(mut section) = parse_first_section(&mut reader, use_curr_line)? else {
             return Ok(state.into());
         };
 
         loop {
-            let flow = match section {
-                Section::General => parse_section(&mut reader, &mut state, Self::parse_general)?,
-                Section::Editor => parse_section(&mut reader, &mut state, Self::parse_editor)?,
-                Section::Metadata => parse_section(&mut reader, &mut state, Self::parse_metadata)?,
-                Section::Difficulty => {
-                    parse_section(&mut reader, &mut state, Self::parse_difficulty)?
-                }
-                Section::Events => parse_section(&mut reader, &mut state, Self::parse_events)?,
-                Section::TimingPoints => {
-                    parse_section(&mut reader, &mut state, Self::parse_timing_points)?
-                }
-                Section::Colors => parse_section(&mut reader, &mut state, Self::parse_colors)?,
-                Section::HitObjects => {
-                    parse_section(&mut reader, &mut state, Self::parse_hit_objects)?
-                }
-                Section::Variables => {
-                    parse_section(&mut reader, &mut state, Self::parse_variables)?
-                }
-                Section::CatchTheBeat => {
-                    parse_section(&mut reader, &mut state, Self::parse_catch_the_beat)?
-                }
-                Section::Mania => parse_section(&mut reader, &mut state, Self::parse_mania)?,
+            let parse_fn = match section {
+                Section::General => Self::parse_general,
+                Section::Editor => Self::parse_editor,
+                Section::Metadata => Self::parse_metadata,
+                Section::Difficulty => Self::parse_difficulty,
+                Section::Events => Self::parse_events,
+                Section::TimingPoints => Self::parse_timing_points,
+                Section::Colors => Self::parse_colors,
+                Section::HitObjects => Self::parse_hit_objects,
+                Section::Variables => Self::parse_variables,
+                Section::CatchTheBeat => Self::parse_catch_the_beat,
+                Section::Mania => Self::parse_mania,
             };
 
-            match flow {
-                SectionFlow::Continue(next) => section = next,
-                SectionFlow::Break(()) => break,
+            match parse_section::<_, Self>(&mut reader, &mut state, parse_fn) {
+                Ok(SectionFlow::Continue(next)) => section = next,
+                Ok(SectionFlow::Break(())) => break,
+                Err(err) => return Err(err),
             }
         }
 
         Ok(state.into())
+    }
+
+    /// Whether a line should *not* be forwarded to the parsing methods.
+    fn should_skip_line(line: &str) -> bool {
+        line.is_empty() || line.starts_with("//") || line.starts_with(' ') || line.starts_with('_')
     }
 
     /// Update the state based on a line of the `[General]` section.
@@ -340,32 +337,37 @@ pub trait DecodeBeatmap: Sized {
 
 struct UseCurrentLine(bool);
 
-fn parse_version<R: BufRead>(reader: &mut Reader<R>) -> Result<(i32, UseCurrentLine), io::Error> {
+fn parse_version<R>(reader: &mut Decoder<R>) -> Result<(Option<i32>, UseCurrentLine), io::Error>
+where
+    R: BufRead,
+{
     loop {
-        let (version, use_curr_line) =
-            match reader.next_line(format_version::try_version_from_line)? {
-                Some(ControlFlow::Continue(())) => continue,
-                Some(ControlFlow::Break(Ok(version))) => (version, false),
+        let (version, use_curr_line) = match reader.read_line() {
+            Ok(Some(line)) => match format_version::try_version_from_line(line) {
+                ControlFlow::Continue(()) => continue,
+                ControlFlow::Break(Ok(version)) => (Some(version), false),
                 // Only used when `tracing` feature is enabled
                 #[allow(unused)]
-                Some(ControlFlow::Break(Err(err))) => {
+                ControlFlow::Break(Err(err)) => {
                     #[cfg(feature = "tracing")]
                     {
                         tracing::error!("Failed to parse format version: {err}");
                         log_error_cause(&err);
                     }
 
-                    (format_version::LATEST_FORMAT_VERSION, true)
+                    (None, true)
                 }
-                None => (format_version::LATEST_FORMAT_VERSION, false),
-            };
+            },
+            Ok(None) => (None, false),
+            Err(err) => return Err(err),
+        };
 
         return Ok((version, UseCurrentLine(use_curr_line)));
     }
 }
 
 fn parse_first_section<R: BufRead>(
-    reader: &mut Reader<R>,
+    reader: &mut Decoder<R>,
     UseCurrentLine(use_curr_line): UseCurrentLine,
 ) -> Result<Option<Section>, io::Error> {
     if use_curr_line {
@@ -375,9 +377,12 @@ fn parse_first_section<R: BufRead>(
     }
 
     loop {
-        match reader.next_line(Section::try_from_line) {
-            Ok(Some(Some(section))) => return Ok(Some(section)),
-            Ok(Some(None)) => {}
+        match reader.read_line() {
+            Ok(Some(line)) => {
+                if let Some(section) = Section::try_from_line(line) {
+                    return Ok(Some(section));
+                }
+            }
             Ok(None) => return Ok(None),
             Err(err) => return Err(err),
         }
@@ -386,36 +391,36 @@ fn parse_first_section<R: BufRead>(
 
 type SectionFlow = ControlFlow<(), Section>;
 
-fn parse_section<R: BufRead, S, E>(
-    reader: &mut Reader<R>,
-    state: &mut S,
-    f: fn(&mut S, &str) -> Result<(), E>,
+fn parse_section<R, D>(
+    reader: &mut Decoder<R>,
+    state: &mut D::State,
+    f: fn(&mut D::State, &str) -> Result<(), D::Error>,
 ) -> Result<SectionFlow, io::Error>
 where
-    E: Error,
+    R: BufRead,
+    D: DecodeBeatmap,
 {
-    let mut f = |line: &str| {
-        if let Some(next) = Section::try_from_line(line) {
-            return ControlFlow::Break(SectionFlow::Continue(next));
-        }
-
-        // Only used when `tracing` feature is enabled
-        #[allow(unused)]
-        let res = f(state, line);
-
-        #[cfg(feature = "tracing")]
-        if let Err(err) = res {
-            tracing::error!("Failed to process line {line:?}: {err}");
-            log_error_cause(&err);
-        }
-
-        ControlFlow::Continue(())
-    };
-
     loop {
-        match reader.next_line(&mut f) {
-            Ok(Some(ControlFlow::Continue(()))) => {}
-            Ok(Some(ControlFlow::Break(flow))) => return Ok(flow),
+        match reader.read_line() {
+            Ok(Some(line)) => {
+                if D::should_skip_line(line) {
+                    continue;
+                }
+
+                if let Some(next) = Section::try_from_line(line) {
+                    return Ok(SectionFlow::Continue(next));
+                }
+
+                // Only used when `tracing` feature is enabled
+                #[allow(unused)]
+                let res = f(state, line);
+
+                #[cfg(feature = "tracing")]
+                if let Err(err) = res {
+                    tracing::error!("Failed to process line {line:?}: {err}");
+                    log_error_cause(&err);
+                }
+            }
             Ok(None) => return Ok(SectionFlow::Break(())),
             Err(err) => return Err(err),
         }
