@@ -1,3 +1,5 @@
+<!-- cargo-rdme start -->
+
 # rosu-map
 
 Library to de- and encode `.osu` files from [osu!](https://osu.ppy.sh/).
@@ -96,3 +98,5 @@ translated, providing a certain degree of correctness even on fringe edge cases.
 After some testing and benchmarking, it turns out that async IO does not provide any improvements
 or performance gains even in a concurrent context. In fact, regular sequential IO consistently
 outperformed its async counterpart. As such `rosu-map` does not provide an async interface.
+
+<!-- cargo-rdme end -->
