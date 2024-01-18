@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 pub use self::decode::{Events, EventsState, ParseEventsError};
 
-mod decode;
+pub(crate) mod decode; // pub(crate) for intradoc-links
 
 /// A break section during a [`Beatmap`].
 ///

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 pub use self::decode::{General, GeneralKey, GeneralState, ParseGeneralError};
 
-mod decode;
+pub(crate) mod decode; // pub(crate) for intradoc-links
 
 /// The game mode of a [`Beatmap`].
 ///

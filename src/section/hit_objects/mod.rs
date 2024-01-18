@@ -20,7 +20,7 @@ pub use self::{
 };
 
 mod circle;
-mod decode;
+pub(crate) mod decode; // pub(crate) for intradoc-links
 mod hold;
 mod slider;
 mod spinner;

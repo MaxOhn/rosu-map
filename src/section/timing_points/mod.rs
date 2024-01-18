@@ -12,5 +12,5 @@ pub use self::{
 };
 
 mod control_points;
-mod decode;
+pub(crate) mod decode; // pub(crate) for intradoc-links
 mod effect_flags;

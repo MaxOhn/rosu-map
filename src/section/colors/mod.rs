@@ -5,7 +5,7 @@ use std::{
 
 pub use self::decode::{Colors, ColorsKey, ColorsState, ParseColorsError};
 
-mod decode;
+pub(crate) mod decode; // pub(crate) for intradoc-links
 
 /// Basic RGBA color.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
