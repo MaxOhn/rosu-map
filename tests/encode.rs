@@ -18,7 +18,7 @@ fn stability() {
         let filename = entry.file_name();
         let filename = filename.to_str().unwrap();
 
-        if !filename.ends_with(".osu") {
+        if !(filename.ends_with(".osu") || filename.ends_with(".osb")) {
             continue;
         }
 
