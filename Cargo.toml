@@ -2,12 +2,18 @@
 name = "rosu-map"
 version = "0.1.0"
 edition = "2021"
+authors = ["MaxOhn <ohn.m@hotmail.de>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/MaxOhn/rosu-map"
+documentation = "https://docs.rs/rosu-map/"
+description = "Library to de- and encode .osu files"
+keywords = ["osu", "parse", "beatmap", "decode"]
+categories = ["parser-implementations", "parsing"]
 
 [dependencies]
 thiserror = { version = "1.0.50" }
 tracing = { version = "0.1.40", default-features = false, optional = true }
-
-[features]
 
 [dev-dependencies]
 test-log = { version = "0.2.14", default-features = false, features = ["trace"] }
