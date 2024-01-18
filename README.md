@@ -50,7 +50,7 @@ assert_eq!(difficulty.approach_rate, 9.2);
 
 let path = "./resources/Soleily - Renatus (Gamu) [Insane].osu";
 let map = rosu_map::from_path::<Beatmap>(path).unwrap();
-assert_eq!(map.audio_filename, "03. Renatus - Soleily 192kbps.mp3");
+assert_eq!(map.audio_file, "03. Renatus - Soleily 192kbps.mp3");
 ```
 
 For information on implementing the [`DecodeBeatmap`] trait on a new type, check out the
@@ -64,15 +64,15 @@ through its `encode*` methods.
 
 ```rust
 let path = "./resources/Within Temptation - The Unforgiving (Armin) [Marathon].osu";
-let mut map = rosu_map::from_path(path).unwrap();
+let mut map: Beatmap = rosu_map::from_path(path).unwrap();
 
 map.approach_rate = 10.0;
 
 map.encode_to_path("./new_file.osu").unwrap();
 
 let metadata = rosu_map::section::metadata::Metadata {
-    title: "song title",
-    artist: "artist name",
+    title: "song title".to_string(),
+    artist: "artist name".to_string(),
     ..Default::default()
 };
 

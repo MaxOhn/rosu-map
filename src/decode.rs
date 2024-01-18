@@ -220,6 +220,15 @@ pub trait DecodeState: Sized {
 ///     fn parse_hit_objects(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
 ///         Ok(())
 ///     }
+///     fn parse_variables(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
+///         Ok(())
+///     }
+///     fn parse_catch_the_beat(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
+///         Ok(())
+///     }
+///     fn parse_mania(_state: &mut Self::State, _line: &str) -> Result<(), Self::Error> {
+///         Ok(())
+///     }
 /// }
 /// ```
 ///
