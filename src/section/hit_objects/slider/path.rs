@@ -135,7 +135,7 @@ impl PartialEq for SliderPath {
     }
 }
 
-/// A positional control point of a [`SliderPath`].
+/// A positional control point of a curve.
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct PathControlPoint {
     pub pos: Pos,

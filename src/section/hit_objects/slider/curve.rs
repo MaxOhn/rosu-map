@@ -396,7 +396,7 @@ fn approximate_catmull(path: &mut Vec<Pos>, points: &[Pos]) {
         return;
     }
 
-    path.reserve_exact((points.len() - 1) * CATMULL_DETAIL * 2);
+    path.reserve((points.len() - 1) * CATMULL_DETAIL * 2);
 
     // Handle first iteration distinctly because of v1
     let v1 = points[0];
@@ -443,7 +443,7 @@ fn approximate_circular_arc(path: &mut Vec<Pos>, a: Pos, b: Pos, c: Pos) -> bool
         }
     };
 
-    path.reserve_exact(amount_points);
+    path.reserve(amount_points);
     let divisor = (amount_points - 1) as f64;
     let directed_range = pr.direction * pr.theta_range;
 

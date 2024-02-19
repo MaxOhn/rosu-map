@@ -131,25 +131,25 @@ impl ControlPoints {
     }
 
     /// Add a [`ControlPoint`] into its corresponding list.
-    pub fn add<P: ControlPoint>(&mut self, point: P) {
+    pub fn add<P: ControlPoint<ControlPoints>>(&mut self, point: P) {
         if !point.check_already_existing(self) {
             point.add(self);
         }
     }
 }
 
-/// A control point to be added into [`ControlPoints`].
-pub trait ControlPoint {
+/// A control point to be added into a collection of type `C`.
+pub trait ControlPoint<C> {
     /// Whether `self` is redundant w.r.t. an already existing control point.
-    fn check_already_existing(&self, control_points: &ControlPoints) -> bool;
+    fn check_already_existing(&self, control_points: &C) -> bool;
 
-    /// Adding the control point into [`ControlPoints`].
+    /// Adding the control point into the collection.
     ///
     /// Note that control points should be inserted in order by time.
-    fn add(self, control_points: &mut ControlPoints);
+    fn add(self, control_points: &mut C);
 }
 
-impl ControlPoint for TimingPoint {
+impl ControlPoint<ControlPoints> for TimingPoint {
     fn check_already_existing(&self, _: &ControlPoints) -> bool {
         false
     }
@@ -165,7 +165,7 @@ impl ControlPoint for TimingPoint {
     }
 }
 
-impl ControlPoint for DifficultyPoint {
+impl ControlPoint<ControlPoints> for DifficultyPoint {
     fn check_already_existing(&self, control_points: &ControlPoints) -> bool {
         match control_points.difficulty_point_at(self.time) {
             Some(existing) => self.is_redundant(existing),
@@ -184,7 +184,7 @@ impl ControlPoint for DifficultyPoint {
     }
 }
 
-impl ControlPoint for EffectPoint {
+impl ControlPoint<ControlPoints> for EffectPoint {
     fn check_already_existing(&self, control_points: &ControlPoints) -> bool {
         match control_points.effect_point_at(self.time) {
             Some(existing) => self.is_redundant(existing),
@@ -203,7 +203,7 @@ impl ControlPoint for EffectPoint {
     }
 }
 
-impl ControlPoint for SamplePoint {
+impl ControlPoint<ControlPoints> for SamplePoint {
     fn check_already_existing(&self, control_points: &ControlPoints) -> bool {
         control_points
             .sample_points

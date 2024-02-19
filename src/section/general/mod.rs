@@ -4,9 +4,7 @@ pub use self::decode::{General, GeneralKey, GeneralState, ParseGeneralError};
 
 pub(crate) mod decode; // pub(crate) for intradoc-links
 
-/// The game mode of a [`Beatmap`].
-///
-/// [`Beatmap`]: crate::beatmap::Beatmap
+/// An osu! gamemode.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum GameMode {
     #[default]
