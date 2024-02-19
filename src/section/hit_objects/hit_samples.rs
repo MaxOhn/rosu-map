@@ -225,7 +225,9 @@ impl FromStr for HitSoundType {
     type Err = ParseHitSoundTypeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.parse().map(Self).map_err(ParseHitSoundTypeError)
+        s.parse::<i32>()
+            .map(|n| Self((n & 0b1111_1111) as u8))
+            .map_err(ParseHitSoundTypeError)
     }
 }
 
