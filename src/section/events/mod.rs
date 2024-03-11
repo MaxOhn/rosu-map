@@ -57,7 +57,9 @@ impl FromStr for EventType {
     }
 }
 
-/// Error when failing to parse an [`EventType`].
-#[derive(Debug, thiserror::Error)]
-#[error("invalid event type")]
-pub struct ParseEventTypeError;
+thiserror! {
+    #[error("invalid event type")]
+    /// Error when failing to parse an [`EventType`].
+    #[derive(Debug)]
+    pub struct ParseEventTypeError;
+}

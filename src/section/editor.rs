@@ -51,11 +51,13 @@ section_keys! {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`Editor`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseEditorError {
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`Editor`] can fail.
+    #[derive(Debug)]
+    pub enum ParseEditorError {
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+    }
 }
 
 /// The parsing state for [`Editor`] in [`DecodeBeatmap`].

@@ -203,17 +203,19 @@ impl Default for Beatmap {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`Beatmap`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseBeatmapError {
-    #[error("failed to parse colors section")]
-    Colors(#[from] ParseColorsError),
-    #[error("failed to parse editor section")]
-    Editor(#[from] ParseEditorError),
-    #[error("failed to parse hit objects")]
-    HitOjects(#[from] ParseHitObjectsError),
-    #[error("failed to parse metadata section")]
-    Metadata(#[from] ParseMetadataError),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`Beatmap`] can fail.
+    #[derive(Debug)]
+    pub enum ParseBeatmapError {
+        #[error("failed to parse colors section")]
+        Colors(#[from] ParseColorsError),
+        #[error("failed to parse editor section")]
+        Editor(#[from] ParseEditorError),
+        #[error("failed to parse hit objects")]
+        HitOjects(#[from] ParseHitObjectsError),
+        #[error("failed to parse metadata section")]
+        Metadata(#[from] ParseMetadataError),
+    }
 }
 
 /// The parsing state for [`Beatmap`] in [`DecodeBeatmap`].

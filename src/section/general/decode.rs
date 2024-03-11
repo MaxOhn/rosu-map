@@ -90,17 +90,19 @@ section_keys! {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`General`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseGeneralError {
-    #[error("failed to parse countdown type")]
-    CountdownType(#[from] ParseCountdownTypeError),
-    #[error("failed to parse mode")]
-    Mode(#[from] ParseGameModeError),
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
-    #[error("failed to parse sample bank")]
-    SampleBank(#[from] ParseSampleBankError),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`General`] can fail.
+    #[derive(Debug)]
+    pub enum ParseGeneralError {
+        #[error("failed to parse countdown type")]
+        CountdownType(#[from] ParseCountdownTypeError),
+        #[error("failed to parse mode")]
+        Mode(#[from] ParseGameModeError),
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+        #[error("failed to parse sample bank")]
+        SampleBank(#[from] ParseSampleBankError),
+    }
 }
 
 /// The parsing state for [`General`] in [`DecodeBeatmap`].

@@ -62,10 +62,12 @@ impl Section {
     }
 }
 
-/// The error when failing to parse a section key.
-#[derive(Debug, thiserror::Error)]
-#[error("unknown key")]
-pub struct UnknownKeyError;
+thiserror! {
+    #[error("unknown key")]
+    /// The error when failing to parse a section key.
+    #[derive(Debug)]
+    pub struct UnknownKeyError;
+}
 
 #[cfg(test)]
 mod tests {

@@ -54,11 +54,13 @@ section_keys! {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`Difficulty`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseDifficultyError {
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`Difficulty`] can fail.
+    #[derive(Debug)]
+    pub enum ParseDifficultyError {
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+    }
 }
 
 /// The parsing state for [`Difficulty`] in [`DecodeBeatmap`].

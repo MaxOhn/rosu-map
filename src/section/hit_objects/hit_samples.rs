@@ -170,10 +170,12 @@ impl TryFrom<i32> for SampleBank {
     }
 }
 
-/// Error when failing to parse a [`SampleBank`].
-#[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid sample bank value")]
-pub struct ParseSampleBankError;
+thiserror! {
+    #[error("invalid sample bank value")]
+    /// Error when failing to parse a [`SampleBank`].
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+    pub struct ParseSampleBankError;
+}
 
 /// The type of a hit sample.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -231,10 +233,12 @@ impl FromStr for HitSoundType {
     }
 }
 
-/// Error when failing to parse a [`HitSoundType`].
-#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid hit sound type")]
-pub struct ParseHitSoundTypeError(#[source] ParseIntError);
+thiserror! {
+    #[error("invalid hit sound type")]
+    /// Error when failing to parse a [`HitSoundType`].
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct ParseHitSoundTypeError(ParseIntError);
+}
 
 impl PartialEq<u8> for HitSoundType {
     fn eq(&self, other: &u8) -> bool {
@@ -368,11 +372,13 @@ impl SampleBankInfo {
     }
 }
 
-/// All the ways that parsing into [`SampleBankInfo`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseSampleBankInfoError {
-    #[error("missing info")]
-    MissingInfo,
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
+thiserror! {
+    /// All the ways that parsing into [`SampleBankInfo`] can fail.
+    #[derive(Debug)]
+    pub enum ParseSampleBankInfoError {
+        #[error("missing info")]
+        MissingInfo,
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+    }
 }

@@ -25,13 +25,15 @@ pub(crate) fn try_version_from_line(line: &str) -> ControlFlow<Result<i32, Parse
     ControlFlow::Break(res)
 }
 
-/// All the ways that parsing the format version can fail.
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum ParseVersionError {
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
-    #[error("unknown file format")]
-    UnknownFileFormat,
+thiserror! {
+    /// All the ways that parsing the format version can fail.
+    #[derive(Debug)]
+    pub(crate) enum ParseVersionError {
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+        #[error("unknown file format")]
+        UnknownFileFormat,
+    }
 }
 
 #[cfg(test)]
