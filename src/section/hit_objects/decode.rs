@@ -159,7 +159,6 @@ thiserror! {
 
 /// The parsing state for [`HitObjects`] in [`DecodeBeatmap`].
 pub struct HitObjectsState {
-    pub first_object: bool,
     pub last_object: Option<HitObjectType>,
     pub curve_points: Vec<PathControlPoint>,
     pub vertices: Vec<PathControlPoint>,
@@ -173,6 +172,10 @@ pub struct HitObjectsState {
 impl HitObjectsState {
     pub const fn difficulty(&self) -> &Difficulty {
         &self.difficulty.difficulty
+    }
+
+    fn first_object(&self) -> bool {
+        self.last_object.is_none()
     }
 
     /// Processes the point string of a slider hit object.
@@ -380,7 +383,6 @@ impl HitObjectsState {
 impl DecodeState for HitObjectsState {
     fn create(version: i32) -> Self {
         Self {
-            first_object: true,
             last_object: None,
             curve_points: Vec::new(),
             vertices: Vec::new(),
@@ -587,7 +589,7 @@ impl DecodeBeatmap for HitObjects {
 
             let circle = HitObjectCircle {
                 pos,
-                new_combo: state.first_object || state.last_object_was_spinner() || new_combo,
+                new_combo: state.first_object() || state.last_object_was_spinner() || new_combo,
                 combo_offset: if new_combo { combo_offset } else { 0 },
             };
 
@@ -655,7 +657,7 @@ impl DecodeBeatmap for HitObjects {
 
             let slider = HitObjectSlider {
                 pos,
-                new_combo: state.first_object || state.last_object_was_spinner() || new_combo,
+                new_combo: state.first_object() || state.last_object_was_spinner() || new_combo,
                 combo_offset: if new_combo { combo_offset } else { 0 },
                 path: SliderPath::new(control_points, len),
                 node_samples,
@@ -715,7 +717,6 @@ impl DecodeBeatmap for HitObjects {
             samples: bank_info.convert_sound_type(sound_type),
         };
 
-        state.first_object = false;
         state.last_object = Some(hit_object_type);
         state.hit_objects.push(result);
 
