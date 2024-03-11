@@ -12,7 +12,6 @@ keywords = ["osu", "parse", "beatmap", "decode"]
 categories = ["parser-implementations", "parsing"]
 
 [dependencies]
-thiserror = { version = "1.0.50" }
 tracing = { version = "0.1.40", default-features = false, optional = true }
 
 [dev-dependencies]

@@ -23,15 +23,17 @@ impl From<Events> for Beatmap {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`Events`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseEventsError {
-    #[error("failed to parse event type")]
-    EventType(#[from] ParseEventTypeError),
-    #[error("invalid line")]
-    InvalidLine,
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`Events`] can fail.
+    #[derive(Debug)]
+    pub enum ParseEventsError {
+        #[error("failed to parse event type")]
+        EventType(#[from] ParseEventTypeError),
+        #[error("invalid line")]
+        InvalidLine,
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+    }
 }
 
 /// The parsing state for [`Events`] in [`DecodeBeatmap`].

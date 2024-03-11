@@ -157,10 +157,12 @@ impl FromStr for HitObjectType {
     }
 }
 
-/// Error when failing to parse a [`HitObjectType`].
-#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid hit object type")]
-pub struct ParseHitObjectTypeError(#[source] ParseIntError);
+thiserror! {
+    #[error("invalid hit object type")]
+    /// Error when failing to parse a [`HitObjectType`].
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct ParseHitObjectTypeError(ParseIntError);
+}
 
 impl From<HitObjectType> for i32 {
     fn from(kind: HitObjectType) -> Self {

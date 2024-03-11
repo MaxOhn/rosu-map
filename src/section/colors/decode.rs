@@ -54,13 +54,15 @@ impl FromStr for ColorsKey {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`Colors`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseColorsError {
-    #[error("color specified in incorrect format (should be R,G,B or R,G,B,A)")]
-    IncorrectColor,
-    #[error("failed to parse number")]
-    Number(#[source] ParseNumberError),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`Colors`] can fail.
+    #[derive(Debug)]
+    pub enum ParseColorsError {
+        #[error("color specified in incorrect format (should be R,G,B or R,G,B,A)")]
+        IncorrectColor,
+        #[error("failed to parse number")]
+        Number(#[source] ParseNumberError),
+    }
 }
 
 impl From<ParseIntError> for ParseColorsError {

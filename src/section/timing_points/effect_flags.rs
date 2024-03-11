@@ -35,7 +35,9 @@ impl FromStr for EffectFlags {
     }
 }
 
-/// Error when failing to parse [`EffectFlags`].
-#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid effect flags")]
-pub struct ParseEffectFlagsError(#[source] ParseIntError);
+thiserror! {
+    #[error("invalid effect flags")]
+    /// Error when failing to parse [`EffectFlags`].
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct ParseEffectFlagsError(ParseIntError);
+}

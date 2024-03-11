@@ -130,29 +130,31 @@ impl From<HitObjects> for Beatmap {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`HitObjects`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseHitObjectsError {
-    #[error("failed to parse difficulty section")]
-    Difficulty(ParseDifficultyError),
-    #[error("failed to parse events section")]
-    Events(#[from] ParseEventsError),
-    #[error("failed to parse hit object type")]
-    HitObjectType(#[from] ParseHitObjectTypeError),
-    #[error("failed to parse hit sound type")]
-    HitSoundType(#[from] ParseHitSoundTypeError),
-    #[error("invalid line")]
-    InvalidLine,
-    #[error("repeat count is way too high")]
-    InvalidRepeatCount(i32),
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
-    #[error("invalid sample bank")]
-    SampleBankInfo(#[from] ParseSampleBankInfoError),
-    #[error("failed to parse timing points")]
-    TimingPoints(#[from] ParseTimingPointsError),
-    #[error("unknown hit object type")]
-    UnknownHitObjectType(HitObjectType),
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`HitObjects`] can fail.
+    #[derive(Debug)]
+    pub enum ParseHitObjectsError {
+        #[error("failed to parse difficulty section")]
+        Difficulty(ParseDifficultyError),
+        #[error("failed to parse events section")]
+        Events(#[from] ParseEventsError),
+        #[error("failed to parse hit object type")]
+        HitObjectType(#[from] ParseHitObjectTypeError),
+        #[error("failed to parse hit sound type")]
+        HitSoundType(#[from] ParseHitSoundTypeError),
+        #[error("invalid line")]
+        InvalidLine,
+        #[error("repeat count is way too high")]
+        InvalidRepeatCount(i32),
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+        #[error("invalid sample bank")]
+        SampleBankInfo(#[from] ParseSampleBankInfoError),
+        #[error("failed to parse timing points")]
+        TimingPoints(#[from] ParseTimingPointsError),
+        #[error("unknown hit object type")]
+        UnknownHitObjectType(HitObjectType),
+    }
 }
 
 /// The parsing state for [`HitObjects`] in [`DecodeBeatmap`].

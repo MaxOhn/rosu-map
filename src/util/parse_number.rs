@@ -12,19 +12,21 @@ pub trait ParseNumber: Sized {
     fn parse_with_limits(s: &str, limit: Self) -> Result<Self, ParseNumberError>;
 }
 
-/// All the ways that parsing with [`ParseNumber`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseNumberError {
-    #[error("invalid float")]
-    InvalidFloat(#[from] num::ParseFloatError),
-    #[error("invalid integer")]
-    InvalidInteger(#[from] num::ParseIntError),
-    #[error("not a number")]
-    NaN,
-    #[error("value is too high")]
-    NumberOverflow,
-    #[error("value is too low")]
-    NumberUnderflow,
+thiserror! {
+    /// All the ways that parsing with [`ParseNumber`] can fail.
+    #[derive(Debug)]
+    pub enum ParseNumberError {
+        #[error("invalid float")]
+        InvalidFloat(#[from] num::ParseFloatError),
+        #[error("invalid integer")]
+        InvalidInteger(#[from] num::ParseIntError),
+        #[error("not a number")]
+        NaN,
+        #[error("value is too high")]
+        NumberOverflow,
+        #[error("value is too low")]
+        NumberUnderflow,
+    }
 }
 
 impl ParseNumber for i32 {

@@ -89,7 +89,9 @@ impl TryFrom<i32> for TimeSignature {
     }
 }
 
-/// Error when failing to parse a [`TimeSignature`].
-#[derive(Copy, Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid time signature, must be positive integer")]
-pub struct TimeSignatureError;
+thiserror! {
+    #[error("invalid time signature, must be positive integer")]
+    /// Error when failing to parse a [`TimeSignature`].
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+    pub struct TimeSignatureError;
+}

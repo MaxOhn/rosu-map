@@ -225,23 +225,25 @@ impl ControlPoint<ControlPoints> for SamplePoint {
     }
 }
 
-/// All the ways that parsing a `.osu` file into [`TimingPoints`] can fail.
-#[derive(Debug, thiserror::Error)]
-pub enum ParseTimingPointsError {
-    #[error("failed to parse effect flags")]
-    EffectFlags(#[from] ParseEffectFlagsError),
-    #[error("failed to parse general section")]
-    General(#[from] ParseGeneralError),
-    #[error("invalid line")]
-    InvalidLine,
-    #[error("failed to parse number")]
-    Number(#[from] ParseNumberError),
-    #[error("failed to parse sample bank")]
-    SampleBank(#[from] ParseSampleBankError),
-    #[error("time signature error")]
-    TimeSignature(#[from] TimeSignatureError),
-    #[error("beat length cannot be NaN in a timing control point")]
-    TimingControlPointNaN,
+thiserror! {
+    /// All the ways that parsing a `.osu` file into [`TimingPoints`] can fail.
+    #[derive(Debug)]
+    pub enum ParseTimingPointsError {
+        #[error("failed to parse effect flags")]
+        EffectFlags(#[from] ParseEffectFlagsError),
+        #[error("failed to parse general section")]
+        General(#[from] ParseGeneralError),
+        #[error("invalid line")]
+        InvalidLine,
+        #[error("failed to parse number")]
+        Number(#[from] ParseNumberError),
+        #[error("failed to parse sample bank")]
+        SampleBank(#[from] ParseSampleBankError),
+        #[error("time signature error")]
+        TimeSignature(#[from] TimeSignatureError),
+        #[error("beat length cannot be NaN in a timing control point")]
+        TimingControlPointNaN,
+    }
 }
 
 /// The parsing state for [`TimingPoints`] in [`DecodeBeatmap`].
