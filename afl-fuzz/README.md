@@ -7,7 +7,7 @@ This is an AFL++-based fuzz tester that catches various unhandled panics within 
 ```
 cargo install cargo-afl
 cargo afl build --release
-# Optional to minimize corpus (be sure to update below command as well): cargo afl cmin -i ../resources -o ../resources_min -- target/release-afl-fuzz
+# Optional to minimize corpus (be sure to update below command as well): cargo afl cmin -i ../resources -o ../resources_min -- target/release/afl-fuzz
 cargo afl fuzz -i ../resources/ -o out/ target/release/afl-fuzz
 ```
 
