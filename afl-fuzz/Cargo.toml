@@ -1,0 +1,9 @@
+[package]
+name = "afl-fuzz"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+afl = "0.15.10"
+arbitrary = "1.3.2"
+rosu-map = { version = "0.1.1", path = ".." }
