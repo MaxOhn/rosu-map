@@ -107,14 +107,14 @@ impl DecodeBeatmap for Metadata {
         };
 
         match key {
-            MetadataKey::Title => state.title = value.to_owned(),
-            MetadataKey::TitleUnicode => state.title_unicode = value.to_owned(),
-            MetadataKey::Artist => state.artist = value.to_owned(),
-            MetadataKey::ArtistUnicode => state.artist_unicode = value.to_owned(),
-            MetadataKey::Creator => state.creator = value.to_owned(),
-            MetadataKey::Version => state.version = value.to_owned(),
-            MetadataKey::Source => state.source = value.to_owned(),
-            MetadataKey::Tags => state.tags = value.to_owned(),
+            MetadataKey::Title => value.clone_into(&mut state.title),
+            MetadataKey::TitleUnicode => value.clone_into(&mut state.title_unicode),
+            MetadataKey::Artist => value.clone_into(&mut state.artist),
+            MetadataKey::ArtistUnicode => value.clone_into(&mut state.artist_unicode),
+            MetadataKey::Creator => value.clone_into(&mut state.creator),
+            MetadataKey::Version => value.clone_into(&mut state.version),
+            MetadataKey::Source => value.clone_into(&mut state.source),
+            MetadataKey::Tags => value.clone_into(&mut state.tags),
             MetadataKey::BeatmapID => state.beatmap_id = value.parse_num()?,
             MetadataKey::BeatmapSetID => state.beatmap_set_id = value.parse_num()?,
         }

@@ -1,4 +1,4 @@
-use std::{cmp, slice};
+use std::{cmp, ptr, slice};
 
 use crate::{
     decode::{DecodeBeatmap, DecodeState},
@@ -174,7 +174,7 @@ impl HitObjectsState {
         &self.difficulty.difficulty
     }
 
-    fn first_object(&self) -> bool {
+    const fn first_object(&self) -> bool {
         self.last_object.is_none()
     }
 
@@ -288,7 +288,7 @@ impl HitObjectsState {
         }
 
         self.vertices
-            .get_mut(0)
+            .first_mut()
             .ok_or(ParseHitObjectsError::InvalidLine)?
             .path_type = Some(path_type);
 
@@ -344,7 +344,7 @@ impl HitObjectsState {
         I: Iterator<Item = &'a str>,
         F: FnOnce(&mut Self, &[&'a str]) -> O,
     {
-        self.point_split.extend(point_split.map(|s| s as *const _));
+        self.point_split.extend(point_split.map(ptr::from_ref));
         let ptr = self.point_split.as_ptr();
         let len = self.point_split.len();
 
