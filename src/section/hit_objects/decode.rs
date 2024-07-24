@@ -287,7 +287,10 @@ impl HitObjectsState {
             }
         }
 
-        self.vertices[0].path_type = Some(path_type);
+        self.vertices
+            .get_mut(0)
+            .ok_or(ParseHitObjectsError::InvalidLine)?
+            .path_type = Some(path_type);
 
         let mut start_idx = 0;
         let mut end_idx = 0;
