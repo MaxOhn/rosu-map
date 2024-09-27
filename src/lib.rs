@@ -91,6 +91,8 @@
 //! {de/en}coding. Not only does its functionality mirror osu!, but many test cases were
 //! translated too, providing a solid degree of correctness even on fringe edge cases.
 //!
+//! Lazer commit on last port: `f08134f443b2cf255fd19c8bc3ef517b6a3bb8e3`
+//!
 //! #### Async
 //!
 //! After some testing and benchmarking, it turns out that async IO does not provide any improvements
