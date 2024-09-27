@@ -662,7 +662,7 @@ impl DecodeBeatmap for HitObjects {
                 pos,
                 new_combo: state.first_object() || state.last_object_was_spinner() || new_combo,
                 combo_offset: if new_combo { combo_offset } else { 0 },
-                path: SliderPath::new(control_points, len),
+                path: SliderPath::new(state.timing_points.mode(), control_points, len),
                 node_samples,
                 repeat_count,
                 velocity: 1.0,

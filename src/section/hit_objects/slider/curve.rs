@@ -1,11 +1,8 @@
 use std::{borrow::Cow, cmp::Ordering, convert::identity, f64::consts::PI, iter, mem};
 
-use crate::util::Pos;
+use crate::{section::general::GameMode, util::Pos};
 
-use super::{
-    path_type::{PathType, SplineType},
-    PathControlPoint,
-};
+use super::{path_type::SplineType, PathControlPoint};
 
 const BEZIER_TOLERANCE: f32 = 0.25;
 const CATMULL_DETAIL: usize = 50;
@@ -68,12 +65,14 @@ pub struct Curve {
 impl Curve {
     /// Create a new [`Curve`].
     pub fn new(
+        mode: GameMode,
         points: &[PathControlPoint],
         expected_len: Option<f64>,
         bufs: &mut CurveBuffers,
     ) -> Self {
-        calculate_path(points, bufs);
-        calculate_length(points, bufs, expected_len);
+        let mut optimized_len = 0.0;
+        calculate_path(mode, points, bufs, &mut optimized_len);
+        calculate_length(bufs, expected_len, optimized_len);
 
         Self {
             path: mem::take(&mut bufs.path),
@@ -137,12 +136,14 @@ pub struct BorrowedCurve<'bufs> {
 impl<'bufs> BorrowedCurve<'bufs> {
     /// Create a new [`BorrowedCurve`] which borrows from [`CurveBuffers`].
     pub fn new(
+        mode: GameMode,
         points: &[PathControlPoint],
         expected_len: Option<f64>,
         bufs: &'bufs mut CurveBuffers,
     ) -> Self {
-        calculate_path(points, bufs);
-        calculate_length(points, bufs, expected_len);
+        let mut optimized_len = 0.0;
+        calculate_path(mode, points, bufs, &mut optimized_len);
+        calculate_length(bufs, expected_len, optimized_len);
 
         Self {
             path: &bufs.path,
@@ -246,9 +247,12 @@ fn interpolate_vertices(path: &[Pos], lengths: &[f64], i: usize, d: f64) -> Pos 
     p0 + (p1 - p0) * w as f32
 }
 
-fn calculate_path(points: &[PathControlPoint], bufs: &mut CurveBuffers) {
-    bufs.path.clear();
-
+fn calculate_path(
+    mode: GameMode,
+    points: &[PathControlPoint],
+    bufs: &mut CurveBuffers,
+    optimized_len: &mut f64,
+) {
     if points.is_empty() {
         return;
     }
@@ -259,6 +263,9 @@ fn calculate_path(points: &[PathControlPoint], bufs: &mut CurveBuffers) {
         path,
         ..
     } = bufs;
+
+    path.clear();
+    *optimized_len = 0.0;
 
     vertices.clear();
     vertices.extend(points.iter().map(|p| p.pos));
@@ -272,22 +279,54 @@ fn calculate_path(points: &[PathControlPoint], bufs: &mut CurveBuffers) {
 
         // * The current vertex ends the segment
         let segment_vertices = &vertices[start..=i];
-        let segment_kind = points[start].path_type.unwrap_or(PathType::LINEAR);
 
-        calculate_subpath(path, segment_vertices, segment_kind, bezier);
+        match segment_vertices.len() {
+            0 => {
+                // The slice comes from `..=` indexing which always includes at
+                // least one item.
+                unreachable!();
+            }
+            1 => {
+                // * No need to calculate path when there is only 1 vertex
+                path.push(segment_vertices[0]);
+            }
+            _ => {
+                let segment_kind = points[start]
+                    .path_type
+                    .map_or(SplineType::Linear, |path_type| path_type.kind);
+
+                let path_len = path.len();
+
+                calculate_subpath(
+                    mode,
+                    path,
+                    segment_vertices,
+                    segment_kind,
+                    optimized_len,
+                    bezier,
+                );
+
+                // * Skip the first vertex if it is the same as the last vertex from the previous segment
+                let skip_first = path_len
+                    .checked_sub(1)
+                    .zip(path.get(path_len))
+                    .map_or(false, |(idx, first)| &path[idx] == first);
+
+                if skip_first {
+                    path[path_len..].rotate_left(1);
+                    path.pop();
+                }
+            }
+        }
+
+        // We don't care about segment ends so we can skip that
 
         // * Start the new segment at the current vertex
         start = i;
     }
-
-    path.dedup();
 }
 
-fn calculate_length(
-    points: &[PathControlPoint],
-    bufs: &mut CurveBuffers,
-    expected_len: Option<f64>,
-) {
+fn calculate_length(bufs: &mut CurveBuffers, expected_len: Option<f64>, optimized_len: f64) {
     let CurveBuffers {
         path,
         lengths: cumulative_len,
@@ -295,7 +334,7 @@ fn calculate_length(
     } = bufs;
 
     cumulative_len.clear();
-    let mut calculated_len = 0.0;
+    let mut calculated_len = optimized_len;
     cumulative_len.reserve(path.len());
     cumulative_len.push(0.0);
 
@@ -310,16 +349,9 @@ fn calculate_length(
     if let Some(expected_len) =
         expected_len.filter(|&len| (calculated_len - len).abs() >= f64::EPSILON)
     {
-        // * In osu-stable, if the last two control points of a slider are equal, extension is not performed
-        let condition_opt = points
-            .len()
-            .checked_sub(2)
-            .and_then(|i| points.get(i..))
-            .filter(|suffix| suffix[0].pos == suffix[1].pos && expected_len > calculated_len);
-
-        if condition_opt.is_some() {
+        // * In osu-stable, if the last two path points of a slider are equal, extension is not performed
+        if matches!(path.as_slice() , [.., a, b] if a == b && expected_len > calculated_len) {
             cumulative_len.push(calculated_len);
-
             return;
         }
 
@@ -364,13 +396,14 @@ fn calculate_length(
 }
 
 fn calculate_subpath(
+    mode: GameMode,
     path: &mut Vec<Pos>,
     sub_points: &[Pos],
-    path_type: PathType,
+    path_type: SplineType,
+    optimized_len: &mut f64,
     bufs: &mut BezierBuffers,
 ) {
-    match path_type.kind {
-        SplineType::Catmull => approximate_catmull(path, sub_points),
+    match path_type {
         SplineType::Linear => approximate_linear(path, sub_points),
         SplineType::PerfectCurve => {
             if let [a, b, c] = sub_points {
@@ -380,6 +413,47 @@ fn calculate_subpath(
             }
 
             approximate_bezier(path, sub_points, bufs);
+        }
+        SplineType::Catmull => {
+            let start_len = path.len();
+            approximate_catmull(path, sub_points);
+
+            if !matches!(mode, GameMode::Osu) {
+                return;
+            }
+
+            let sub_path = path.split_off(start_len);
+
+            let mut last_start = None;
+            let mut len_removed_since_start = 0.0;
+
+            for (i, curr) in sub_path.iter().copied().enumerate() {
+                let Some(ref last_start_) = last_start else {
+                    path.push(curr);
+                    last_start = Some(curr);
+
+                    continue;
+                };
+
+                let dist_from_start = f64::from(last_start_.distance(curr));
+                len_removed_since_start += f64::from(sub_path[i - 1].distance(curr));
+
+                // Keeping the same order as lazer's code
+                #[allow(clippy::items_after_statements)]
+                const CATMULL_SEGMENT_LEN: usize = CATMULL_DETAIL * 2;
+
+                // * Either 6px from the start, the last vertex at every knot, or the end of the path.
+                if dist_from_start > 6.0
+                    || ((i + 1) % CATMULL_SEGMENT_LEN) == 0
+                    || i == sub_path.len() - 1
+                {
+                    path.push(curr);
+                    *optimized_len += len_removed_since_start - dist_from_start;
+
+                    last_start = None;
+                    len_removed_since_start = 0.0;
+                }
+            }
         }
         SplineType::BSpline => approximate_bezier(path, sub_points, bufs),
     }
@@ -429,13 +503,13 @@ fn approximate_circular_arc(path: &mut Vec<Pos>, a: Pos, b: Pos, c: Pos) -> bool
     // * is: 2 * Math.Acos(1 - TOLERANCE / r)
     // * The special case is required for extremely short sliders where the radius is smaller than
     // * the tolerance. This is a pathological rather than a realistic case.
-    let amount_points = if 2.0 * pr.radius <= CIRCULAR_ARC_TOLERANCE {
+    let sub_points = if 2.0 * pr.radius <= CIRCULAR_ARC_TOLERANCE {
         2
     } else {
-        let divisor = 2.0 * (1.0 - CIRCULAR_ARC_TOLERANCE / pr.radius).acos();
+        let divisor = 2.0 * (1.0 - (CIRCULAR_ARC_TOLERANCE / pr.radius)).acos();
 
         // In C# it holds `(int)Infinity == -2147483648` whereas in Rust it's 2147483647
-        // so we need to workaround this edge case, see map id 2568364
+        // so we need to workaround this edge case, see map /b/2568364
         if divisor.abs() <= f32::EPSILON {
             2
         } else {
@@ -443,11 +517,17 @@ fn approximate_circular_arc(path: &mut Vec<Pos>, a: Pos, b: Pos, c: Pos) -> bool
         }
     };
 
-    path.reserve(amount_points);
-    let divisor = (amount_points - 1) as f64;
+    // * 1000 subpoints requires an arc length of at least ~120 thousand to occur
+    // * See here for calculations https://www.desmos.com/calculator/umj6jvmcz7
+    if sub_points >= 1000 {
+        return false;
+    }
+
+    path.reserve(sub_points);
+    let divisor = (sub_points - 1) as f64;
     let directed_range = pr.direction * pr.theta_range;
 
-    let subpath = (0..amount_points).map(|i| {
+    let subpath = (0..sub_points).map(|i| {
         let fract = i as f64 / divisor;
         let theta = pr.theta_start + fract * directed_range;
         let (sin, cos) = theta.sin_cos();

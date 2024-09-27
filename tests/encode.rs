@@ -1,8 +1,11 @@
 use std::{fmt::Debug, fs, num::NonZeroI32};
 
 use rosu_map::{
-    section::hit_objects::{
-        HitObject, HitObjectKind, HitObjectSlider, PathControlPoint, PathType, SliderPath,
+    section::{
+        general::GameMode,
+        hit_objects::{
+            HitObject, HitObjectKind, HitObjectSlider, PathControlPoint, PathType, SliderPath,
+        },
     },
     util::Pos,
     Beatmap,
@@ -93,7 +96,7 @@ fn bspline_curve_type() {
         },
     ];
 
-    let path = SliderPath::new(control_points, None);
+    let path = SliderPath::new(GameMode::Taiko, control_points, None);
 
     let slider = HitObjectSlider {
         pos: Pos::new(0.0, 0.0),
@@ -158,7 +161,7 @@ fn multi_segment_slider_with_floating_point_error() {
         },
     ];
 
-    let path = SliderPath::new(control_points, None);
+    let path = SliderPath::new(GameMode::Taiko, control_points, None);
 
     let slider = HitObjectSlider {
         pos: Pos::new(0.6, 0.6),

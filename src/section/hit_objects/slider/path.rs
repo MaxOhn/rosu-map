@@ -1,4 +1,4 @@
-use crate::util::Pos;
+use crate::{section::general::GameMode, util::Pos};
 
 use super::{
     curve::{BorrowedCurve, Curve, CurveBuffers},
@@ -10,6 +10,7 @@ use super::{
 /// [`HitObjectSlider`]: crate::section::hit_objects::HitObjectSlider
 #[derive(Clone, Debug)]
 pub struct SliderPath {
+    mode: GameMode,
     control_points: Vec<PathControlPoint>,
     expected_dist: Option<f64>,
     curve: Option<Curve>,
@@ -20,8 +21,13 @@ impl SliderPath {
     ///
     /// The contained [`Curve`] will not necessarily be calculated yet, only
     /// when accessing it with methods such as [`SliderPath::curve`].
-    pub const fn new(control_points: Vec<PathControlPoint>, expected_dist: Option<f64>) -> Self {
+    pub const fn new(
+        mode: GameMode,
+        control_points: Vec<PathControlPoint>,
+        expected_dist: Option<f64>,
+    ) -> Self {
         Self {
+            mode,
             control_points,
             expected_dist,
             curve: None,
@@ -86,11 +92,11 @@ impl SliderPath {
     ///
     /// This should be preferred over [`SliderPath::curve_with_bufs`] if the
     /// curve will be accessed only once.
-    pub fn borrowed_curve<'a, 'b: 'a>(&'a self, bufs: &'b mut CurveBuffers) -> BorrowedCurve<'_> {
+    pub fn borrowed_curve<'a, 'b: 'a>(&'a self, bufs: &'b mut CurveBuffers) -> BorrowedCurve<'a> {
         if let Some(ref curve) = self.curve {
             curve.as_borrowed_curve()
         } else {
-            BorrowedCurve::new(&self.control_points, self.expected_dist, bufs)
+            BorrowedCurve::new(self.mode, &self.control_points, self.expected_dist, bufs)
         }
     }
 
@@ -125,7 +131,7 @@ impl SliderPath {
     }
 
     fn calculate_curve_with_bufs(&self, bufs: &mut CurveBuffers) -> Curve {
-        Curve::new(&self.control_points, self.expected_dist, bufs)
+        Curve::new(self.mode, &self.control_points, self.expected_dist, bufs)
     }
 }
 
@@ -159,7 +165,7 @@ mod tests {
     #[test]
     fn borrowed_curve() {
         let mut bufs = CurveBuffers::default();
-        let mut path = SliderPath::new(Vec::new(), None);
+        let mut path = SliderPath::new(GameMode::Osu, Vec::new(), None);
 
         // freshly calculate the curve; lifetime will depend on `bufs`
         let borrowed_curve = path.borrowed_curve(&mut bufs);
