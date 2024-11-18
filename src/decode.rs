@@ -296,7 +296,7 @@ pub trait DecodeBeatmap: Sized {
 
     /// Whether a line should *not* be forwarded to the parsing methods.
     fn should_skip_line(line: &str) -> bool {
-        line.is_empty() || line.starts_with("//") || line.starts_with(' ') || line.starts_with('_')
+        line.is_empty() || line.trim_start().starts_with("//")
     }
 
     /// Update the state based on a line of the `[General]` section.

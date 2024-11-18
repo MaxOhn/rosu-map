@@ -95,6 +95,8 @@ A sizable section of `rosu-map` is a port of [osu!lazer]'s beatmap
 {de/en}coding. Not only does its functionality mirror osu!, but many test cases were
 translated too, providing a solid degree of correctness even on fringe edge cases.
 
+Lazer commit on last port: `8bd65d9938a10fc42e6409501b0282f0fa4a25ef`
+
 ##### Async
 
 After some testing and benchmarking, it turns out that async IO does not provide any improvements

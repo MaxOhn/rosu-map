@@ -257,6 +257,12 @@ pub struct TimingPointsState {
     control_points: ControlPoints,
 }
 
+impl TimingPointsState {
+    pub(crate) const fn mode(&self) -> GameMode {
+        self.general.mode
+    }
+}
+
 trait Pending: Sized {
     fn pending(state: &mut TimingPointsState) -> &mut Option<Self>;
 
