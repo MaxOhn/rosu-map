@@ -76,11 +76,7 @@ impl Iterator for SliderEventsIter<'_> {
         loop {
             match self.state {
                 SliderEventsIterState::Head => {
-                    self.state = if self.tick_dist.abs() >= f64::EPSILON {
-                        SliderEventsIterState::Ticks { span: 0 }
-                    } else {
-                        SliderEventsIterState::LastTick
-                    };
+                    self.state = SliderEventsIterState::Ticks { span: 0 };
 
                     return Some(SliderEvent {
                         kind: SliderEventType::Head,
@@ -179,29 +175,31 @@ fn generate_ticks(iter: &mut SliderEventsIter<'_>, span: i32) {
 
     let mut d = iter.tick_dist;
 
-    while d <= iter.len {
-        if d >= iter.len - iter.min_dist_from_end {
-            break;
+    if d > 0.0 {
+        while d <= iter.len {
+            if d >= iter.len - iter.min_dist_from_end {
+                break;
+            }
+
+            let path_progress = d / iter.len;
+
+            let time_progres = if reversed {
+                1.0 - path_progress
+            } else {
+                path_progress
+            };
+
+            let tick = SliderEvent {
+                kind: SliderEventType::Tick,
+                span_idx: span,
+                span_start_time,
+                time: span_start_time + time_progres * iter.span_duration,
+                path_progress,
+            };
+
+            iter.ticks.push(tick);
+            d += iter.tick_dist;
         }
-
-        let path_progress = d / iter.len;
-
-        let time_progres = if reversed {
-            1.0 - path_progress
-        } else {
-            path_progress
-        };
-
-        let tick = SliderEvent {
-            kind: SliderEventType::Tick,
-            span_idx: span,
-            span_start_time,
-            time: span_start_time + time_progres * iter.span_duration,
-            path_progress,
-        };
-
-        iter.ticks.push(tick);
-        d += iter.tick_dist;
     }
 
     // We pop from the back so we want to double-reverse
