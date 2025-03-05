@@ -486,7 +486,7 @@ impl DecodeBeatmap for TimingPoints {
         let mut effect = EffectPoint::new(time, kiai_mode);
 
         if matches!(state.general.mode, GameMode::Taiko | GameMode::Mania) {
-            effect.scroll_speed = (speed_multiplier.clamp(0.01, 10.0) / 0.01).round() * 0.01;
+            effect.scroll_speed = speed_multiplier.clamp(0.01, 10.0);
         }
 
         state.add_control_point(time, effect, timing_change);
