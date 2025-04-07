@@ -1,7 +1,7 @@
 # v0.2.1 (2025-04-07)
 
-Fixed clamping for effect point scroll speed
-Fixed slider events with `0.0` tick distance
+- Fixed clamping for effect point scroll speed
+- Fixed slider events with `0.0` tick distance
 
 ## v0.2.0 (2024-11-18)
 
