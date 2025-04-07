@@ -1,4 +1,9 @@
-# v0.2.0 (2024-11-18)
+# v0.2.1 (2025-04-07)
+
+Fixed clamping for effect point scroll speed
+Fixed slider events with `0.0` tick distance
+
+## v0.2.0 (2024-11-18)
 
 - [Breaking] Creating a `Curve` or `BorrowedCurve`, and thus `SliderPath` too, now requires a specified `GameMode`. ([#5])
 - The default implementation of the function `Decode::should_skip_line` has been slightly adjusted ([#5])
